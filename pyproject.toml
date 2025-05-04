@@ -1,14 +1,15 @@
 [project]
-name = "pylib-template"
+name = "fast-pypi"
 description = ""
-authors = [{ name = "hotdog-werx", email = "jmlopez.rod@gmail.com" }]
+authors = [{ name = "hotdog-werx", email = "james.trousdale@protonmail.com" }]
 license = "MIT"
 readme = "README.md"
 requires-python = ">=3.10"
 dynamic = ['version']
 
 dependencies = [
-  'pydantic >=2.10.6'
+  'pydantic >=2.11.4, <3',
+  'fastapi >=0.115.12, <1',
 ]
 
 [dependency-groups]
@@ -17,22 +18,18 @@ dev = [
   "greenlet >=3.1.1, <4",
   "pytest >= 8.3.3, <9",
   "pytest-mock >=3.12.0",
-  "pydantic >=2.10.6",
   "basedpyright >= 1.22.0, <2",
   "ruff >=0.8.0, < 1",
 ]
 
 [tool.hatch.version]
-path = 'packages/python/pylib_template/version.py'
-
-[project.scripts]
-pylib_template = "pylib_template.__main__:main"
+path = 'packages/python/fast_pypi/version.py'
 
 [tool.hatch.build.targets.sdist]
-include = ['/README.md', '/CHANGELOG.md', 'packages/python/pylib_template']
+include = ['/README.md', '/CHANGELOG.md', 'packages/python/fast_pypi']
 
 [tool.hatch.build.targets.wheel]
-packages = ['packages/python/pylib_template']
+packages = ['packages/python/fast_pypi']
 
 
 [tool.coverage.report]
