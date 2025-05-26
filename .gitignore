@@ -1,8 +1,2 @@
-.codeguide
-.editorconfig
-Makefile
-
-__pycache__/
-*.py[cod]
-*$py.class
-.coverage
+/tmp*
+*.pyc
