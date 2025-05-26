@@ -3,10 +3,10 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 
 
-class AbstractStorageInterface(ABC):
-    """Abstract base class for storage interfaces.
+class AbstractBackendInterface(ABC):
+    """Abstract base class for backend interfaces.
 
-    This class defines the interface for storage operations, such as listing projects,
+    This class defines the interface for backend storage operations, such as listing projects,
     listing files for a project, getting file contents, and saving files.
 
     Attributes:
@@ -16,7 +16,7 @@ class AbstractStorageInterface(ABC):
     allow_overwrite: bool
 
     def __init__(self, *, allow_overwrite: bool = False) -> None:
-        """Initialize the storage interface.
+        """Initialize the backend interface.
 
         Args:
             allow_overwrite: Whether to allow overwriting existing files.
@@ -25,7 +25,7 @@ class AbstractStorageInterface(ABC):
 
     @abstractmethod
     async def list_projects(self) -> Sequence[str]:
-        """List all projects in the storage.
+        """List all projects in the backend.
 
         Returns:
             A sequence of project names.

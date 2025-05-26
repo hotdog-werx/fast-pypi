@@ -1,25 +1,26 @@
 import hashlib
 from collections.abc import Sequence
 from logging import getLogger
-from pathlib import Path
 
 import aiofiles
 from aiofiles import os as aiofiles_os
 from typing_extensions import override
 
+from fast_pypi.backend import AbstractBackendInterface, FileContents, ProjectFileExistsError
 from fast_pypi.pypi import pypi_normalize
-from fast_pypi.storage import AbstractStorageInterface, FileContents, ProjectFileExistsError
+
+from .env import LocalFSConfig
 
 logger = getLogger(__name__)
 
 
-class LocalFSInterface(AbstractStorageInterface):
-    """Interface for local file system storage."""
+class LocalFSBackend(AbstractBackendInterface):
+    """Interface for the local file system backend."""
 
-    root_path: Path
+    config: LocalFSConfig
 
-    def __init__(self, root_path: Path, *, allow_overwrite: bool = False) -> None:
-        self.root_path = root_path
+    def __init__(self, config: LocalFSConfig, *, allow_overwrite: bool = False) -> None:
+        self.config = config
         super().__init__(allow_overwrite=allow_overwrite)
 
     @override
@@ -30,8 +31,8 @@ class LocalFSInterface(AbstractStorageInterface):
             A sequence of project names.
         """
         projects: list[str] = []
-        for project in await aiofiles_os.listdir(self.root_path):
-            project_path = self.root_path / project
+        for project in await aiofiles_os.listdir(self.config.root_path):
+            project_path = self.config.root_path / project
             if await aiofiles_os.path.isdir(project_path) and not project.startswith('.'):
                 projects.append(project)
         return projects
@@ -49,7 +50,7 @@ class LocalFSInterface(AbstractStorageInterface):
         Returns:
             A sequence of filenames for the specified project.
         """
-        project_path = self.root_path / pypi_normalize(project_name)
+        project_path = self.config.root_path / pypi_normalize(project_name)
 
         if not await aiofiles_os.path.exists(project_path):
             logger.warning(
@@ -82,7 +83,7 @@ class LocalFSInterface(AbstractStorageInterface):
         Returns:
             A FileContents object containing the file's contents and SHA256 digest, or None if the file does not exist.
         """
-        project_path = self.root_path / pypi_normalize(project_name)
+        project_path = self.config.root_path / pypi_normalize(project_name)
         file_path = project_path / filename
         sha256_path = project_path / f'{filename}.sha256'
 
@@ -142,7 +143,7 @@ class LocalFSInterface(AbstractStorageInterface):
             file_content: The content of the file to save.
             sha256_digest: The SHA256 digest of the file content.
         """
-        project_path = self.root_path / pypi_normalize(project_name)
+        project_path = self.config.root_path / pypi_normalize(project_name)
         await aiofiles_os.makedirs(project_path, exist_ok=True)
 
         file_path = project_path / filename

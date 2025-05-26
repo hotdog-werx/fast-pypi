@@ -17,7 +17,10 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-azure_blob = ["azure-storage-blob >=12.25.1, <13"]
+azure_blob = [
+  "azure-storage-blob >=12.25.1, <13",
+  "azure-identity >=1.23.0, <2",
+]
 
 [dependency-groups]
 dev = [
@@ -49,9 +52,12 @@ exclude_lines = [
 ]
 
 [tool.ruff]
-lint.external = ["CCR", "DAR", "DOC", "WPS"]
-lint.select = ["ALL"]
-lint.ignore = [
+line-length = 119
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["ALL"]
+ignore = [
   "COM812",  # Trailing comma, supposedly conflicts with linter, so we have add-trailing-commas
   "D100",    # No docstrings for modules
   "D104",    # No docstrings for packages
@@ -61,8 +67,6 @@ lint.ignore = [
   "PLR2004", # Allow magic value comparison
   "SLF",     # Ignore private member access, covered by pyright
 ]
-line-length = 119
-target-version = "py311"
 
 [tool.ruff.format]
 quote-style = "single"
