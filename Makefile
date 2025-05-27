@@ -7,11 +7,11 @@ uv-update:
 uv-install:
 	uv sync --group dev --all-extras --locked
 
+checks:
+	./scripts/checks.sh
+
 tests:
-	uv run coverage run \
-        --concurrency 'thread,greenlet' \
-        --source "packages/python/fast_pypi" -m pytest -vv packages/python && \
-    uv run coverage report -m --fail-under "${COVERAGE_FAIL_UNDER:-100}"
+	./scripts/tests.sh
 
 local-dev:
-	uv run python -m local_dev
+	uv run python scripts/local_dev

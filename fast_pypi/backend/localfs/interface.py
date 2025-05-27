@@ -1,17 +1,17 @@
 import hashlib
 from collections.abc import Sequence
-from logging import getLogger
 
 import aiofiles
+import aioshutil
 from aiofiles import os as aiofiles_os
 from typing_extensions import override
 
 from fast_pypi.backend import AbstractBackendInterface, FileContents, ProjectFileExistsError
+from fast_pypi.env import FastPypiConfig
+from fast_pypi.logging import logger
 from fast_pypi.pypi import pypi_normalize
 
 from .env import LocalFSConfig
-
-logger = getLogger(__name__)
 
 
 class LocalFSBackend(AbstractBackendInterface):
@@ -19,9 +19,9 @@ class LocalFSBackend(AbstractBackendInterface):
 
     config: LocalFSConfig
 
-    def __init__(self, config: LocalFSConfig, *, allow_overwrite: bool = False) -> None:
+    def __init__(self, config: LocalFSConfig, general_config: FastPypiConfig) -> None:
         self.config = config
-        super().__init__(allow_overwrite=allow_overwrite)
+        super().__init__(general_config=general_config)
 
     @override
     async def list_projects(self) -> Sequence[str]:
@@ -41,16 +41,17 @@ class LocalFSBackend(AbstractBackendInterface):
     async def list_files_for_project(
         self,
         project_name: str,
-    ) -> Sequence[str]:
+    ) -> Sequence[tuple[str, str]]:
         """List all files for a given project in the local file system.
 
         Args:
             project_name: The name of the project.
 
         Returns:
-            A sequence of filenames for the specified project.
+            A sequence of tuples of (version, filename) for the specified project.
         """
         project_path = self.config.root_path / pypi_normalize(project_name)
+        files: list[tuple[str, str]] = []
 
         if not await aiofiles_os.path.exists(project_path):
             logger.warning(
@@ -62,28 +63,45 @@ class LocalFSBackend(AbstractBackendInterface):
             )
             return []
 
-        return [
-            f.name
-            for f in await aiofiles_os.scandir(project_path)
-            if f.is_file() and not f.name.startswith('.') and not f.name.endswith('.sha256')
+        version_names = [
+            d
+            for d in await aiofiles_os.listdir(project_path)
+            if await aiofiles_os.path.isdir(project_path / d) and not d.startswith('.')
         ]
+
+        for version in version_names:
+            version_path = project_path / version
+            file_names = [
+                f
+                for f in await aiofiles_os.listdir(version_path)
+                if (
+                    await aiofiles_os.path.isfile(version_path / f)
+                    and not f.startswith('.')
+                    and not f.endswith('.sha256')
+                )
+            ]
+            files.extend((version, file_name) for file_name in file_names)
+
+        return files
 
     @override
     async def get_file_contents(
         self,
         project_name: str,
+        version: str,
         filename: str,
     ) -> FileContents | None:
         """Get the contents of a file from the local file system.
 
         Args:
             project_name: The name of the project.
+            version: The version of the project.
             filename: The name of the file to retrieve.
 
         Returns:
             A FileContents object containing the file's contents and SHA256 digest, or None if the file does not exist.
         """
-        project_path = self.config.root_path / pypi_normalize(project_name)
+        project_path = self.config.root_path / pypi_normalize(project_name) / version
         file_path = project_path / filename
         sha256_path = project_path / f'{filename}.sha256'
 
@@ -107,11 +125,6 @@ class LocalFSBackend(AbstractBackendInterface):
             async with aiofiles.open(sha256_path, 'rb') as f:  # pyright: ignore[reportUnknownMemberType]
                 sha256_digest = (await f.read()).decode('utf-8').strip()
         else:
-            # Calculate the SHA256 digest if the file does not exist and
-            # save it for future use
-            sha256_digest = hashlib.sha256(content).hexdigest()
-            async with aiofiles.open(sha256_path, 'wb') as f:  # pyright: ignore[reportUnknownMemberType]
-                _ = await f.write(sha256_digest.encode('utf-8'))
             logger.warning(
                 'sha256_digest_file_does_not_exist',
                 extra={
@@ -121,6 +134,12 @@ class LocalFSBackend(AbstractBackendInterface):
                 },
             )
 
+            # Calculate the SHA256 digest if the file does not exist and
+            # save it for future use
+            sha256_digest = hashlib.sha256(content).hexdigest()
+            async with aiofiles.open(sha256_path, 'wb') as f:  # pyright: ignore[reportUnknownMemberType]
+                _ = await f.write(sha256_digest.encode('utf-8'))
+
         return FileContents(
             filename=filename,
             content=content,
@@ -128,26 +147,28 @@ class LocalFSBackend(AbstractBackendInterface):
         )
 
     @override
-    async def save_file(
+    async def upload_file(
         self,
         project_name: str,
+        version: str,
         filename: str,
         file_content: bytes,
         sha256_digest: str,
     ) -> None:
-        """Save a file to the local file system.
+        """Upload a file to the local file system for a specific project.
 
         Args:
             project_name: The name of the project.
+            version: The version of the project
             filename: The name of the file to save.
             file_content: The content of the file to save.
             sha256_digest: The SHA256 digest of the file content.
         """
-        project_path = self.config.root_path / pypi_normalize(project_name)
-        await aiofiles_os.makedirs(project_path, exist_ok=True)
+        project_version_path = self.config.root_path / pypi_normalize(project_name) / version
+        await aiofiles_os.makedirs(project_version_path, exist_ok=True)
 
-        file_path = project_path / filename
-        if not self.allow_overwrite and await aiofiles_os.path.exists(file_path):
+        file_path = project_version_path / filename
+        if not self.general_config.allow_overwrite and await aiofiles_os.path.exists(file_path):
             logger.error(
                 'file_already_exists',
                 extra={
@@ -161,8 +182,45 @@ class LocalFSBackend(AbstractBackendInterface):
                 project_name=project_name,
             )
 
-        async with aiofiles.open(project_path / filename, 'wb') as f:  # pyright: ignore[reportUnknownMemberType]
+        async with aiofiles.open(project_version_path / filename, 'wb') as f:  # pyright: ignore[reportUnknownMemberType]
             _ = await f.write(file_content)
 
-        async with aiofiles.open(project_path / f'{filename}.sha256', 'wb') as f:  # pyright: ignore[reportUnknownMemberType]
+        async with aiofiles.open(project_version_path / f'{filename}.sha256', 'wb') as f:  # pyright: ignore[reportUnknownMemberType]
             _ = await f.write(sha256_digest.encode('utf-8'))
+
+    @override
+    async def delete_project_version(
+        self,
+        project_name: str,
+        version: str,
+    ) -> bool:
+        """Delete a specific project version from the local file system.
+
+        Args:
+            project_name: The name of the project.
+            version: The version of the project to delete.
+
+        Returns:
+            bool: True if the version was successfully deleted, False otherwise.
+        """
+        project_path = self.config.root_path / pypi_normalize(project_name) / version
+
+        if not await aiofiles_os.path.exists(project_path):
+            logger.warning(
+                'delete_project_version_not_found',
+                extra={
+                    'project_name': project_name,
+                    'version': version,
+                    'project_path': str(project_path),
+                },
+            )
+
+        await aioshutil.rmtree(project_path, ignore_errors=True)
+        logger.info(
+            'project_version_deleted',
+            extra={
+                'project_name': project_name,
+                'version': version,
+            },
+        )
+        return True

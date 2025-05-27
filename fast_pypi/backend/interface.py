@@ -2,6 +2,8 @@ from abc import ABC, abstractmethod
 from collections.abc import Sequence
 from dataclasses import dataclass
 
+from fast_pypi.env import FastPypiConfig
+
 
 class AbstractBackendInterface(ABC):
     """Abstract base class for backend interfaces.
@@ -10,18 +12,18 @@ class AbstractBackendInterface(ABC):
     listing files for a project, getting file contents, and saving files.
 
     Attributes:
-        allow_overwrite: Whether to allow overwriting existing files.
+        general_config: General FastPypi configuration.
     """
 
-    allow_overwrite: bool
+    general_config: FastPypiConfig
 
-    def __init__(self, *, allow_overwrite: bool = False) -> None:
+    def __init__(self, *, general_config: FastPypiConfig) -> None:
         """Initialize the backend interface.
 
         Args:
-            allow_overwrite: Whether to allow overwriting existing files.
+            general_config: General FastPypi configuration.
         """
-        self.allow_overwrite = allow_overwrite
+        self.general_config = general_config
 
     @abstractmethod
     async def list_projects(self) -> Sequence[str]:
@@ -33,48 +35,71 @@ class AbstractBackendInterface(ABC):
         ...
 
     @abstractmethod
-    async def list_files_for_project(self, project_name: str) -> Sequence[str]:
+    async def list_files_for_project(self, project_name: str) -> Sequence[tuple[str, str]]:
         """List all files for a given project.
 
         Args:
             project_name: The name of the project.
 
         Returns:
-            A sequence of filenames for the specified project.
+            A sequence of tuples of (version, filename) for the specified
+                project.
         """
         ...
 
     @abstractmethod
-    async def get_file_contents(self, project_name: str, filename: str) -> 'FileContents | None':
+    async def get_file_contents(self, project_name: str, version: str, filename: str) -> 'FileContents | None':
         """Get the contents of a file for a specific project.
 
         Args:
             project_name: The name of the project.
+            version: The version of the project.
             filename: The name of the file.
 
         Returns:
-            An instance of FileContents containing the file's content and its SHA256 digest.
+            An instance of FileContents containing the file's content and its
+                SHA256 digest.
         """
         ...
 
     @abstractmethod
-    async def save_file(
+    async def upload_file(
         self,
         project_name: str,
+        version: str,
         filename: str,
         file_content: bytes,
         sha256_digest: str,
     ) -> None:
-        """Save a file for a specific project.
+        """Upload a file for a specific project.
 
         Args:
             project_name: The name of the project.
+            version: The version of the project.
             filename: The name of the file to save.
             file_content: The content of the file as bytes.
             sha256_digest: The SHA256 digest of the file content.
 
         Raises:
             ProjectFileExistsError: If the file already exists and overwriting is not allowed.
+        """
+        ...
+
+    @abstractmethod
+    async def delete_project_version(
+        self,
+        project_name: str,
+        version: str,
+    ) -> bool:
+        """Delete a specific project version for a project.
+
+        Args:
+            project_name: The name of the project.
+            version: The version of the project to delete.
+
+        Returns:
+            bool: True if the version was successfully deleted, False
+                otherwise.
         """
         ...
 

@@ -3,14 +3,12 @@ from typing import Literal
 
 from pydantic import BaseModel
 
-from fast_pypi.backend import AbstractBackendInterface
-
 
 class FastPypiConfig(BaseModel):
     """Configuration for the local file system storage environment."""
 
     allow_overwrite: bool
-    backend: Literal['localfs']
+    backend: Literal['localfs', 'azure_blob']
 
     @classmethod
     def from_env(cls) -> 'FastPypiConfig':
@@ -21,16 +19,3 @@ class FastPypiConfig(BaseModel):
                 'backend': os.getenv('FAST_PYPI_BACKEND', 'localfs'),
             }
         )
-
-    def get_backend(self) -> AbstractBackendInterface:
-        """Get the storage backend based on the configuration."""
-        if self.backend == 'localfs':
-            from fast_pypi.backend.localfs import LocalFSBackend, LocalFSConfig
-
-            return LocalFSBackend(
-                config=LocalFSConfig.from_env(),
-                allow_overwrite=self.allow_overwrite,
-            )
-
-        msg = f"Backend '{self.backend}' is not implemented."
-        raise NotImplementedError(msg)

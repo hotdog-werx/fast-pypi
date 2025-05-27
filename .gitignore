@@ -1,2 +1,14 @@
+# VS Code settings
+.vscode
+
+# Temporary files
 /tmp*
-*.pyc
+
+# Python cache files
+.venv
+__pycache__/
+*.py[cod]
+*.pyo
+
+# CI artifacts
+.coverage

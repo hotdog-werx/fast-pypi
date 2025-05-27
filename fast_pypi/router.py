@@ -15,9 +15,13 @@ from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel, Field
 from starlette.responses import HTMLResponse
 
-from .env import FastPypiEnvConfig
+from .backend import ProjectFileExistsError
+from .get_backend import get_backend_from_env
 from .logging import logger
-from .package_rbac import ProjectRBACDecisionInput, get_project_rbac_decision_func
+from .package_rbac import (
+    ProjectRBACDecisionInput,
+    get_project_rbac_decision_func,
+)
 
 templates = Jinja2Templates(
     directory=Path(__file__).parent / 'templates',
@@ -67,7 +71,7 @@ async def get_simple_index(request: Request) -> HTMLResponse:
         ),
     )
 
-    backend = FastPypiEnvConfig.from_env().get_backend()
+    backend = get_backend_from_env()
     return templates.TemplateResponse(
         request=request,
         name='simple_index.html',
@@ -89,7 +93,7 @@ async def get_project_simple_index(request: Request, project_name: str) -> HTMLR
         ),
     )
 
-    backend = FastPypiEnvConfig.from_env().get_backend()
+    backend = get_backend_from_env()
     project_files = await backend.list_files_for_project(
         project_name,
     )
@@ -103,10 +107,11 @@ async def get_project_simple_index(request: Request, project_name: str) -> HTMLR
     )
 
 
-@pep503_router.get('/artifacts/{project_name}/{filename}')
+@pep503_router.get('/artifacts/{project_name}/{version}/{filename}')
 async def get_project_artifact(
     request: Request,
     project_name: str,
+    version: str,
     filename: str,
 ) -> Response:
     """Get a specific artifact for a project."""
@@ -119,9 +124,10 @@ async def get_project_artifact(
         ),
     )
 
-    backend = FastPypiEnvConfig.from_env().get_backend()
+    backend = get_backend_from_env()
     file_contents = await backend.get_file_contents(
         project_name=project_name,
+        version=version,
         filename=filename,
     )
     if not file_contents:
@@ -160,7 +166,7 @@ class UploadFormData(BaseModel):
     content: UploadFile
 
 
-@pep503_router.post('/', status_code=status.HTTP_201_CREATED)
+@pep503_router.post('/upload/', status_code=status.HTTP_201_CREATED)
 async def upload_project_file(
     request: Request,
     body: Annotated[UploadFormData, Form()],
@@ -175,7 +181,7 @@ async def upload_project_file(
         ),
     )
 
-    backend = FastPypiEnvConfig.from_env().get_backend()
+    backend = get_backend_from_env()
 
     if not body.content.filename:
         raise HTTPException(
@@ -183,9 +189,60 @@ async def upload_project_file(
             detail='Filename is required.',
         )
 
-    await backend.save_file(
-        project_name=body.name,
-        filename=body.content.filename,
-        file_content=await body.content.read(),
-        sha256_digest=body.sha256_digest,
+    try:
+        await backend.upload_file(
+            project_name=body.name,
+            version=body.version,
+            filename=body.content.filename,
+            file_content=await body.content.read(),
+            sha256_digest=body.sha256_digest,
+        )
+    except ProjectFileExistsError as e:
+        logger.warning(
+            'project_file_exists',
+            extra={
+                'project_name': body.name,
+                'file_name': body.content.filename,
+                'version': body.version,
+            },
+        )
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f'File {body.content.filename} for project {body.name} already exists.',
+        ) from e
+
+
+@pep503_router.delete('/delete/{project_name}/{version}', status_code=status.HTTP_204_NO_CONTENT)
+async def delete_project_version(
+    request: Request,
+    project_name: str,
+    version: str,
+) -> None:
+    """Delete a specific version of a project."""
+    # Check RBAC for the delete operation on the simple root
+    await _check_and_raise_project_rbac(
+        ProjectRBACDecisionInput(
+            operation_type='delete',
+            project_name=project_name,
+            request=request,
+        ),
+    )
+
+    backend = get_backend_from_env()
+    result = await backend.delete_project_version(
+        project_name=project_name,
+        version=version,
+    )
+    if not result:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f'Project {project_name} version {version} not found.',
+        )
+
+    logger.info(
+        'project_version_deleted',
+        extra={
+            'project_name': project_name,
+            'version': version,
+        },
     )

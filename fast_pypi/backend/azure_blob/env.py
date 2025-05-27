@@ -4,7 +4,7 @@ from typing import Annotated, Literal, cast
 
 from pydantic import BaseModel, Field, SecretStr
 
-_DESTINATION_PATH_PATTERN = re.compile(r'^(https?://[^/]+(?::\d+)?)/([^/]+)/(.+)$')
+_DESTINATION_PATH_PATTERN = re.compile(r'^(https?://[^/]+(?::\d+)?)/([^/]+)/(.+/)$')
 
 
 class AzureBlobConfig(BaseModel):
