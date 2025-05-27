@@ -1,3 +1,4 @@
+import secrets
 import tempfile
 from collections.abc import Iterator
 from pathlib import Path
@@ -33,28 +34,45 @@ def localfs_backend() -> Iterator[LocalFSBackend]:
 
 
 @pytest.fixture(scope='session')
-def azure_blob_backend() -> Iterator[AzureBlobBackend]:
+def azurite_container() -> Iterator[AzuriteContainer]:
+    """Fixture to set up an Azurite container for testing Azure Blob Storage."""
+    with AzuriteContainer() as azurite:
+        yield azurite
+
+
+@pytest.fixture
+def azure_blob_backend(
+    azurite_container: AzuriteContainer,
+) -> Iterator[AzureBlobBackend]:
     """Fixture to set up a azure blob backend for testing."""
-    container_name = 'blobbackendtest'
+    container_name = 'blobtest' + secrets.token_hex(2)
     base_path = '/fast_pypi/azureblob_tests/'
 
-    with AzuriteContainer() as azurite:
-        azurite_url = f'http://{azurite.get_container_host_ip()}:{azurite.get_exposed_port(10000)}'
+    azurite_host = azurite_container.get_container_host_ip()
+    azurite_blob_port = azurite_container.get_exposed_port(10000)
+    azurite_connection_string = azurite_container.get_connection_string()
 
-        _ = ContainerClient.from_connection_string(
-            conn_str=azurite.get_connection_string(),
-            container_name=container_name,
-        ).create_container()
+    azurite_url = f'http://{azurite_host}:{azurite_blob_port}'
 
-        azure_blob_backend = AzureBlobBackend(
-            config=AzureBlobConfig(
-                destination_path=f'{azurite_url}/{container_name}{base_path}',
-                connection_string=SecretStr(azurite.get_connection_string()),
-            ),
-            general_config=FastPypiConfig(
-                allow_overwrite=False,
-                backend='azure_blob',
-            ),
-        )
+    _ = ContainerClient.from_connection_string(
+        conn_str=azurite_connection_string,
+        container_name=container_name,
+    ).create_container()
 
-        yield azure_blob_backend
+    azure_blob_backend = AzureBlobBackend(
+        config=AzureBlobConfig(
+            destination_path=f'{azurite_url}/{container_name}{base_path}',
+            connection_string=SecretStr(azurite_connection_string),
+        ),
+        general_config=FastPypiConfig(
+            allow_overwrite=False,
+            backend='azure_blob',
+        ),
+    )
+
+    yield azure_blob_backend
+
+    _ = ContainerClient.from_connection_string(
+        conn_str=azurite_connection_string,
+        container_name=container_name,
+    ).delete_container()

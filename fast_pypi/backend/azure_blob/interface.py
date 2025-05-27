@@ -32,11 +32,13 @@ class AzureBlobBackend(AbstractBackendInterface):
                 blob_prop async for blob_prop in container_client.walk_blobs(name_starts_with=base_path, delimiter='/')
             ]
 
-            return [
-                blob_prop.name.removeprefix(base_path).removesuffix('/')
-                for blob_prop in blob_props
-                if '/' in blob_prop.name
-            ]
+            return sorted(
+                [
+                    blob_prop.name.removeprefix(base_path).removesuffix('/')
+                    for blob_prop in blob_props
+                    if '/' in blob_prop.name
+                ]
+            )
 
     @override
     async def list_files_for_project(
@@ -54,12 +56,14 @@ class AzureBlobBackend(AbstractBackendInterface):
         """
         async with azure_blob_container_client(config=self.config) as (container_client, base_path):
             name_prefix = f'{base_path}{project_name}/'
-            blob_names = [
-                blob_prop
-                async for blob_prop in container_client.list_blob_names(
-                    name_starts_with=name_prefix,
-                )
-            ]
+            blob_names = sorted(
+                [
+                    blob_name
+                    async for blob_name in container_client.list_blob_names(
+                        name_starts_with=name_prefix,
+                    )
+                ]
+            )
 
             blob_name_splits = [blob_name.removeprefix(name_prefix).split('/', maxsplit=1) for blob_name in blob_names]
 
@@ -128,7 +132,7 @@ class AzureBlobBackend(AbstractBackendInterface):
         version: str,
         filename: str,
         file_content: bytes,
-        sha256_digest: str,
+        sha256_digest: str | None,
     ) -> None:
         """Upload a file to the azure blob backend for a specific project.
 
@@ -152,7 +156,7 @@ class AzureBlobBackend(AbstractBackendInterface):
             _ = await blob_client.upload_blob(
                 data=file_content,
                 overwrite=self.general_config.allow_overwrite,
-                metadata={'sha256': sha256_digest},
+                metadata={'sha256': sha256_digest or hashlib.sha256(file_content).hexdigest()},
             )
             logger.info(
                 'azure_blob_backend_file_saved',
@@ -205,6 +209,49 @@ class AzureBlobBackend(AbstractBackendInterface):
                 extra={
                     'project_name': project_name,
                     'version': version,
+                },
+            )
+            return True
+
+    @override
+    async def delete_project_version_file(
+        self,
+        project_name: str,
+        version: str,
+        filename: str,
+    ) -> bool:
+        """Delete a specific file for a project version in the azure blob backend.
+
+        Args:
+            project_name: The name of the project.
+            version: The version of the project.
+            filename: The name of the file to delete.
+
+        Returns:
+            True if the file was deleted, False if it did not exist.
+        """
+        async with azure_blob_container_client(config=self.config) as (container_client, base_path):
+            blob_name = f'{base_path}{project_name}/{version}/{filename}'
+            blob_client = container_client.get_blob_client(blob_name)
+
+            if not await blob_client.exists():
+                logger.warning(
+                    'delete_project_version_file_not_found',
+                    extra={
+                        'project_name': project_name,
+                        'version': version,
+                        'file_name': filename,
+                    },
+                )
+                return False
+
+            await blob_client.delete_blob()
+            logger.info(
+                'azure_blob_backend_file_deleted',
+                extra={
+                    'project_name': project_name,
+                    'version': version,
+                    'file_name': filename,
                 },
             )
             return True

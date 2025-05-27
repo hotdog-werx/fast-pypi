@@ -7,13 +7,6 @@ from azure.storage.blob.aio import ContainerClient
 from .env import AzureBlobConfig
 
 
-class InvalidConnectionStringError(ValueError):
-    """Raised when the connection string is invalid or missing credentials."""
-
-    def __init__(self) -> None:
-        super().__init__('Invalid connection string provided. Ensure it contains a valid credential.')
-
-
 @asynccontextmanager
 async def azure_blob_container_client(
     config: AzureBlobConfig,

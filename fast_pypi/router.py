@@ -151,18 +151,18 @@ class UploadFormData(BaseModel):
     """Form data for uploading a package file."""
 
     action: Annotated[Literal['file_upload'], Field(alias=':action')]
-    sha256_digest: str
+    sha256_digest: str | None = None
     protocol_version: Literal['1']
     metadata_version: str
     name: str
     version: str
     filetype: Literal['sdist', 'bdist_wheel']
-    pyversion: str
-    author_email: str
+    pyversion: str | None = None
+    author_email: str | None = None
     description: str
     description_content_type: str
-    license_expression: str
-    requires_python: str
+    license_expression: str | None = None
+    requires_python: str | None = None
     content: UploadFile
 
 

@@ -35,7 +35,7 @@ class LocalFSBackend(AbstractBackendInterface):
             project_path = self.config.root_path / project
             if await aiofiles_os.path.isdir(project_path) and not project.startswith('.'):
                 projects.append(project)
-        return projects
+        return sorted(projects)
 
     @override
     async def list_files_for_project(
@@ -82,7 +82,7 @@ class LocalFSBackend(AbstractBackendInterface):
             ]
             files.extend((version, file_name) for file_name in file_names)
 
-        return files
+        return sorted(files)
 
     @override
     async def get_file_contents(
@@ -153,7 +153,7 @@ class LocalFSBackend(AbstractBackendInterface):
         version: str,
         filename: str,
         file_content: bytes,
-        sha256_digest: str,
+        sha256_digest: str | None,
     ) -> None:
         """Upload a file to the local file system for a specific project.
 
@@ -185,8 +185,9 @@ class LocalFSBackend(AbstractBackendInterface):
         async with aiofiles.open(project_version_path / filename, 'wb') as f:  # pyright: ignore[reportUnknownMemberType]
             _ = await f.write(file_content)
 
+        set_sha256_digest = sha256_digest or hashlib.sha256(file_content).hexdigest()
         async with aiofiles.open(project_version_path / f'{filename}.sha256', 'wb') as f:  # pyright: ignore[reportUnknownMemberType]
-            _ = await f.write(sha256_digest.encode('utf-8'))
+            _ = await f.write(set_sha256_digest.encode('utf-8'))
 
     @override
     async def delete_project_version(
@@ -214,6 +215,7 @@ class LocalFSBackend(AbstractBackendInterface):
                     'project_path': str(project_path),
                 },
             )
+            return False
 
         await aioshutil.rmtree(project_path, ignore_errors=True)
         logger.info(
@@ -221,6 +223,51 @@ class LocalFSBackend(AbstractBackendInterface):
             extra={
                 'project_name': project_name,
                 'version': version,
+            },
+        )
+        return True
+
+    @override
+    async def delete_project_version_file(
+        self,
+        project_name: str,
+        version: str,
+        filename: str,
+    ) -> bool:
+        """Delete a specific file for a project version from the local file system.
+
+        Args:
+            project_name: The name of the project.
+            version: The version of the project.
+            filename: The name of the file to delete.
+
+        Returns:
+            bool: True if the file was deleted, False if it did not exist.
+        """
+        project_path = self.config.root_path / pypi_normalize(project_name) / version
+        file_path = project_path / filename
+        sha256_path = project_path / f'{filename}.sha256'
+
+        if not await aiofiles_os.path.exists(file_path):
+            logger.warning(
+                'delete_project_version_file_not_found',
+                extra={
+                    'project_name': project_name,
+                    'version': version,
+                    'file_name': filename,
+                    'file_path': str(file_path),
+                },
+            )
+            return False
+
+        await aiofiles_os.remove(file_path)
+        await aiofiles_os.remove(sha256_path)
+        logger.info(
+            'project_version_file_deleted',
+            extra={
+                'project_name': project_name,
+                'version': version,
+                'file_name': filename,
             },
         )
         return True

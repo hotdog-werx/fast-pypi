@@ -49,6 +49,9 @@ include = ['/README.md', '/CHANGELOG.md', 'fast_pypi']
 [tool.hatch.build.targets.wheel]
 packages = ['fast_pypi']
 
+[tool.pytest.ini_options]
+asyncio_default_fixture_loop_scope = 'function'
+
 [tool.coverage.report]
 exclude_lines = [
   'pragma: no cover',

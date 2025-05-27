@@ -32,7 +32,6 @@ class AbstractBackendInterface(ABC):
         Returns:
             A sequence of project names.
         """
-        ...
 
     @abstractmethod
     async def list_files_for_project(self, project_name: str) -> Sequence[tuple[str, str]]:
@@ -45,7 +44,6 @@ class AbstractBackendInterface(ABC):
             A sequence of tuples of (version, filename) for the specified
                 project.
         """
-        ...
 
     @abstractmethod
     async def get_file_contents(self, project_name: str, version: str, filename: str) -> 'FileContents | None':
@@ -60,7 +58,6 @@ class AbstractBackendInterface(ABC):
             An instance of FileContents containing the file's content and its
                 SHA256 digest.
         """
-        ...
 
     @abstractmethod
     async def upload_file(
@@ -69,7 +66,7 @@ class AbstractBackendInterface(ABC):
         version: str,
         filename: str,
         file_content: bytes,
-        sha256_digest: str,
+        sha256_digest: str | None,
     ) -> None:
         """Upload a file for a specific project.
 
@@ -78,12 +75,12 @@ class AbstractBackendInterface(ABC):
             version: The version of the project.
             filename: The name of the file to save.
             file_content: The content of the file as bytes.
-            sha256_digest: The SHA256 digest of the file content.
+            sha256_digest: The SHA256 digest of the file content. If not
+                provided, it will be calculated automatically.
 
         Raises:
             ProjectFileExistsError: If the file already exists and overwriting is not allowed.
         """
-        ...
 
     @abstractmethod
     async def delete_project_version(
@@ -101,7 +98,24 @@ class AbstractBackendInterface(ABC):
             bool: True if the version was successfully deleted, False
                 otherwise.
         """
-        ...
+
+    @abstractmethod
+    async def delete_project_version_file(
+        self,
+        project_name: str,
+        version: str,
+        filename: str,
+    ) -> bool:
+        """Delete a specific file for a project version.
+
+        Args:
+            project_name: The name of the project.
+            version: The version of the project.
+            filename: The name of the file to delete.
+
+        Returns:
+            bool: True if the file was successfully deleted, False otherwise.
+        """
 
 
 @dataclass(frozen=True)
