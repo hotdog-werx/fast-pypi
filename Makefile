@@ -1,6 +1,8 @@
 .EXPORT_ALL_VARIABLES:
 SHELL := /bin/bash
 
+.PHONY: all uv-update uv-install checks tests local-dev
+
 uv-update:
 	uv lock --upgrade
 
