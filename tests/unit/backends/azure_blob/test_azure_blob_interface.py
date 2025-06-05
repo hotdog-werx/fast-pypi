@@ -4,7 +4,7 @@ import pytest
 from azure.storage.blob.aio import ContainerClient
 from testcontainers.azurite import AzuriteContainer  # pyright: ignore[reportMissingTypeStubs]
 
-from fast_pypi.backend.azure_blob.interface import AzureBlobBackend
+from fast_pypi.backends.azure_blob.interface import AzureBlobBackend
 
 
 @pytest.mark.asyncio

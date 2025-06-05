@@ -2,11 +2,11 @@ from typing import TYPE_CHECKING, cast
 
 import pytest
 
-from fast_pypi.backend import ProjectFileExistsError
+from fast_pypi.backends import ProjectFileExistsError
 from tests.helpers import UploadTestFile
 
 if TYPE_CHECKING:
-    from fast_pypi.backend import AbstractBackendInterface
+    from fast_pypi.backends import AbstractBackendInterface
 
 
 @pytest.mark.parametrize(

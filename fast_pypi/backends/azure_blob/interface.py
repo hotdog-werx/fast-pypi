@@ -3,7 +3,7 @@ from collections.abc import Sequence
 
 from typing_extensions import override
 
-from fast_pypi.backend import AbstractBackendInterface, FileContents, ProjectFileExistsError
+from fast_pypi.backends import AbstractBackendInterface, FileContents, ProjectFileExistsError
 from fast_pypi.env import FastPypiConfig
 from fast_pypi.logging import logger
 

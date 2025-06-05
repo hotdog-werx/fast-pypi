@@ -15,7 +15,7 @@ from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel, Field
 from starlette.responses import HTMLResponse
 
-from .backend import ProjectFileExistsError
+from .backends import ProjectFileExistsError
 from .get_backend import get_backend_from_env
 from .logging import logger
 from .package_rbac import (

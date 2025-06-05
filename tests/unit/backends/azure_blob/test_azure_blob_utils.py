@@ -4,10 +4,10 @@ import pytest
 from pydantic import SecretStr
 from pytest_mock import MockerFixture
 
-from fast_pypi.backend.azure_blob.azure_blob_utils import (
+from fast_pypi.backends.azure_blob.azure_blob_utils import (
     azure_blob_container_client,
 )
-from fast_pypi.backend.azure_blob.env import AzureBlobConfig
+from fast_pypi.backends.azure_blob.env import AzureBlobConfig
 
 
 @pytest.mark.asyncio

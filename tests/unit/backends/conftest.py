@@ -8,10 +8,10 @@ from azure.storage.blob import ContainerClient
 from pydantic import SecretStr
 from testcontainers.azurite import AzuriteContainer  # pyright: ignore[reportMissingTypeStubs]
 
-from fast_pypi.backend.azure_blob.env import AzureBlobConfig
-from fast_pypi.backend.azure_blob.interface import AzureBlobBackend
-from fast_pypi.backend.localfs.env import LocalFSConfig
-from fast_pypi.backend.localfs.interface import LocalFSBackend
+from fast_pypi.backends.azure_blob.env import AzureBlobConfig
+from fast_pypi.backends.azure_blob.interface import AzureBlobBackend
+from fast_pypi.backends.localfs.env import LocalFSConfig
+from fast_pypi.backends.localfs.interface import LocalFSBackend
 from fast_pypi.env import FastPypiConfig
 
 

@@ -3,7 +3,7 @@ from dataclasses import dataclass
 import pytest
 from pydantic import SecretStr
 
-from fast_pypi.backend.azure_blob.env import AzureBlobConfig
+from fast_pypi.backends.azure_blob.env import AzureBlobConfig
 
 
 @dataclass

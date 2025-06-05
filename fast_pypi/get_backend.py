@@ -1,4 +1,4 @@
-from .backend import AbstractBackendInterface
+from .backends import AbstractBackendInterface
 from .env import FastPypiConfig
 
 
@@ -7,16 +7,16 @@ def get_backend_from_env() -> AbstractBackendInterface:
     general_env = FastPypiConfig.from_env()
 
     if general_env.backend == 'localfs':
-        from fast_pypi.backend.localfs.env import LocalFSConfig
-        from fast_pypi.backend.localfs.interface import LocalFSBackend
+        from fast_pypi.backends.localfs.env import LocalFSConfig
+        from fast_pypi.backends.localfs.interface import LocalFSBackend
 
         return LocalFSBackend(
             config=LocalFSConfig.from_env(),
             general_config=general_env,
         )
     if general_env.backend == 'azure_blob':
-        from fast_pypi.backend.azure_blob.env import AzureBlobConfig
-        from fast_pypi.backend.azure_blob.interface import AzureBlobBackend
+        from fast_pypi.backends.azure_blob.env import AzureBlobConfig
+        from fast_pypi.backends.azure_blob.interface import AzureBlobBackend
 
         return AzureBlobBackend(
             config=AzureBlobConfig.from_env(),
