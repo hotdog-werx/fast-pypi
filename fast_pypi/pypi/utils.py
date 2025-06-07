@@ -1,8 +1,17 @@
 import re
+from re import Pattern
 
 from fastapi import Request
 
-__PATTERN = re.compile(r'[-_.]+', re.ASCII)
+# Pattern for normalizing package names
+__NORMALIZE_PATTERN = re.compile(r'[-_.]+', re.ASCII)
+
+# Path patterns for different endpoints
+__UPLOAD_PATTERN = re.compile(r'.*/upload/?$')
+__SIMPLE_ROOT_PATTERN = re.compile(r'.*/simple/?$')
+__SIMPLE_PROJECT_PATTERN = re.compile(r'.*/simple/([^/]+)/?$')
+__ARTIFACTS_PATTERN = re.compile(r'.*/artifacts/([^/]+)/.+')
+__DELETE_PATTERN = re.compile(r'.*/delete/([^/]+)/.+')
 
 
 def pypi_normalize(name: str) -> str:
@@ -17,29 +26,22 @@ def pypi_normalize(name: str) -> str:
     Returns:
         The normalized package name.
     """
-    return __PATTERN.sub('-', name).lower()
+    return __NORMALIZE_PATTERN.sub('-', name).lower()
 
 
-def _get_project_name_from_path(endpoint: str, path_parts: list[str]) -> str | None:
-    """Extract project name from path parts for a specific endpoint.
+def _get_project_name_from_path_pattern(pattern: Pattern[str], path: str) -> str | None:
+    """Extract project name from a path using a regex pattern.
 
     Args:
-        endpoint: The endpoint to look for ('simple', 'artifacts', 'delete')
-        path_parts: List of URL path components
+        pattern: Compiled regex pattern with a capture group for project name
+        path: URL path to match against
 
     Returns:
-        str | None: Project name if found after the endpoint, None otherwise
+        str | None: Project name if found in capture group, None otherwise
     """
-    try:
-        idx = path_parts.index(endpoint)
-        # For simple endpoint, root path returns None
-        if endpoint == 'simple' and idx == len(path_parts) - 1:
-            return None
-        # For all endpoints, get the part after the endpoint if it exists
-        if idx < len(path_parts) - 1:
-            return path_parts[idx + 1]
-    except (ValueError, IndexError):
-        pass
+    match = pattern.match(path)
+    if match and match.group(1):
+        return match.group(1)
     return None
 
 
@@ -52,9 +54,13 @@ async def _get_project_name_from_upload_form(request: Request) -> str | None:
     Returns:
         str | None: Project name from form data if found, None otherwise
     """
-    form = await request.form()
-    name = form.get('name')
-    return str(name) if name else None
+    try:
+        form = await request.form()
+        name = form.get('name')
+        return str(name) if name else None
+    except RuntimeError:
+        # Form not available or already consumed
+        return None
 
 
 async def infer_project_name_from_request(request: Request) -> str | None:
@@ -74,16 +80,35 @@ async def infer_project_name_from_request(request: Request) -> str | None:
     Returns:
         str | None: The inferred project name, or None if accessing root index or unable to infer.
     """
-    path_parts = request.url.path.strip('/').split('/')
+    # Root simple index always returns None
+    if request.method == 'GET' and __SIMPLE_ROOT_PATTERN.match(request.url.path):
+        return None
 
-    # For upload endpoint, get project name from form data
-    if 'upload' in path_parts:
+    # Upload endpoint gets project name from form data
+    if request.method == 'POST' and __UPLOAD_PATTERN.match(request.url.path):
         return await _get_project_name_from_upload_form(request)
 
-    # Try known endpoints in order
-    for endpoint in ['simple', 'artifacts', 'delete']:
-        result = _get_project_name_from_path(endpoint, path_parts)
-        if result is not None:
+    # Try project-specific endpoints in order
+    for method, pattern in [
+        ('GET', __SIMPLE_PROJECT_PATTERN),
+        ('GET', __ARTIFACTS_PATTERN),
+        ('DELETE', __DELETE_PATTERN),
+    ]:
+        if (
+            request.method == method
+            and (
+                result := _get_project_name_from_path_pattern(
+                    pattern,
+                    request.url.path,
+                )
+            )
+            is not None
+        ):
             return result
 
-    return None
+    msg = (
+        f'Unable to infer project name from request: '
+        f'method={request.method}, path={request.url.path}. '
+        'Ensure the path matches one of the expected patterns.'
+    )
+    raise ValueError(msg)
