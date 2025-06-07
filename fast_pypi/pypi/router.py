@@ -4,6 +4,7 @@ from typing import Annotated, Literal
 
 from fastapi import (
     APIRouter,
+    File,
     Form,
     HTTPException,
     Request,
@@ -15,13 +16,11 @@ from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel, Field
 from starlette.responses import HTMLResponse
 
-from .backends import ProjectFileExistsError
-from .get_backend import get_backend_from_env
-from .logging import logger
-from .package_rbac import (
-    ProjectRBACDecisionInput,
-    get_project_rbac_decision_func,
-)
+from fast_pypi.backends import ProjectFileExistsError
+from fast_pypi.get_backend import get_backend_from_env
+from fast_pypi.logger import logger
+
+from .package_rbac import authorize_dependency
 
 templates = Jinja2Templates(
     directory=Path(__file__).parent / 'templates',
@@ -29,48 +28,17 @@ templates = Jinja2Templates(
 pep503_router = APIRouter()
 
 
-async def _check_and_raise_project_rbac(rbac_input: ProjectRBACDecisionInput) -> None:
-    """Check and raise an exception if the project RBAC decision is not allowed.
-
-    Args:
-        rbac_input: Input for the RBAC decision function.
-
-    Raises:
-        HTTPException: If the RBAC decision is not allowed.
-    """
-    decision = await get_project_rbac_decision_func()(rbac_input)
-    if not decision:
-        logger.warning(
-            'rbac_check_failed',
-            extra={
-                'operation_type': rbac_input.operation_type,
-                'project_name': rbac_input.project_name,
-                'request_method': rbac_input.request.method,
-                'request_path': rbac_input.request.url.path,
-            },
-        )
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail='You do not have permission to access this project.',
-        )
-
-
-@pep503_router.get('/simple/', response_class=HTMLResponse)
+@pep503_router.get(
+    '/simple/',
+    response_class=HTMLResponse,
+    dependencies=[authorize_dependency('read')],
+)
 async def get_simple_index(request: Request) -> HTMLResponse:
     """A simple endpoint to test the router.
 
     Returns:
         HTMLResponse: A simple HTML response listing all projects.
     """
-    # Check RBAC for the read operation on the simple root
-    await _check_and_raise_project_rbac(
-        ProjectRBACDecisionInput(
-            operation_type='read',
-            project_name=None,  # None for root
-            request=request,
-        ),
-    )
-
     backend = get_backend_from_env()
     return templates.TemplateResponse(
         request=request,
@@ -81,18 +49,13 @@ async def get_simple_index(request: Request) -> HTMLResponse:
     )
 
 
-@pep503_router.get('/simple/{project_name}/', response_class=HTMLResponse)
+@pep503_router.get(
+    '/simple/{project_name}/',
+    response_class=HTMLResponse,
+    dependencies=[authorize_dependency('read')],
+)
 async def get_project_simple_index(request: Request, project_name: str) -> HTMLResponse:
     """A simple endpoint to test the router."""
-    # Check RBAC for the read operation on the simple root
-    await _check_and_raise_project_rbac(
-        ProjectRBACDecisionInput(
-            operation_type='read',
-            project_name=project_name,
-            request=request,
-        ),
-    )
-
     backend = get_backend_from_env()
     project_files = await backend.list_files_for_project(
         project_name,
@@ -107,23 +70,16 @@ async def get_project_simple_index(request: Request, project_name: str) -> HTMLR
     )
 
 
-@pep503_router.get('/artifacts/{project_name}/{version}/{filename}')
+@pep503_router.get(
+    '/artifacts/{project_name}/{version}/{filename}',
+    dependencies=[authorize_dependency('read')],
+)
 async def get_project_artifact(
-    request: Request,
     project_name: str,
     version: str,
     filename: str,
 ) -> Response:
     """Get a specific artifact for a project."""
-    # Check RBAC for the read operation on the simple root
-    await _check_and_raise_project_rbac(
-        ProjectRBACDecisionInput(
-            operation_type='read',
-            project_name=project_name,
-            request=request,
-        ),
-    )
-
     backend = get_backend_from_env()
     file_contents = await backend.get_file_contents(
         project_name=project_name,
@@ -163,27 +119,28 @@ class UploadFormData(BaseModel):
     description_content_type: str
     license_expression: str | None = None
     requires_python: str | None = None
-    content: UploadFile
+    content: Annotated[UploadFile, File()]
 
 
-@pep503_router.post('/upload/', status_code=status.HTTP_201_CREATED)
+@pep503_router.post(
+    '/upload/',
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[authorize_dependency('write')],
+)
 async def upload_project_file(
-    request: Request,
-    body: Annotated[UploadFormData, Form()],
+    body: Annotated[UploadFormData, Form(media_type='multipart/form-data')],
 ) -> None:
     """Upload a project file to the server."""
-    # Check RBAC for the read operation on the simple root
-    await _check_and_raise_project_rbac(
-        ProjectRBACDecisionInput(
-            operation_type='write',
-            project_name=body.name,
-            request=request,
-        ),
-    )
-
     backend = get_backend_from_env()
 
-    if not body.content.filename:
+    if not body.content.filename:  # pragma: no cover
+        logger.warning(
+            'upload_file_missing_filename',
+            extra={
+                'project_name': body.name,
+                'version': body.version,
+            },
+        )
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail='Filename is required.',
@@ -212,22 +169,17 @@ async def upload_project_file(
         ) from e
 
 
-@pep503_router.delete('/delete/{project_name}/{version}', status_code=status.HTTP_204_NO_CONTENT)
+@pep503_router.delete(
+    '/delete/{project_name}/{version}',
+    status_code=status.HTTP_204_NO_CONTENT,
+    dependencies=[authorize_dependency('delete')],
+)
 async def delete_project_version(
-    request: Request,
+    _: Request,
     project_name: str,
     version: str,
 ) -> None:
     """Delete a specific version of a project."""
-    # Check RBAC for the delete operation on the simple root
-    await _check_and_raise_project_rbac(
-        ProjectRBACDecisionInput(
-            operation_type='delete',
-            project_name=project_name,
-            request=request,
-        ),
-    )
-
     backend = get_backend_from_env()
     result = await backend.delete_project_version(
         project_name=project_name,

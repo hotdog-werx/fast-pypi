@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from fast_pypi.backends.localfs.env import LocalFSConfig
+from fast_pypi.backends.localfs.config import LocalFSConfig
 
 
 @dataclass

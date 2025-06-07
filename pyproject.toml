@@ -34,6 +34,7 @@ dev = [
   'uvicorn >=0.34.2, <1',
   'types-aiofiles >=24.1.0.20250516, <25',
   'testcontainers[azurite] >=4.10.0, <5',
+  'httpx >=0, <1',
 ]
 
 [build-system]
@@ -51,6 +52,7 @@ packages = ['fast_pypi']
 
 [tool.pytest.ini_options]
 asyncio_default_fixture_loop_scope = 'function'
+addopts = '-vv'
 
 [tool.coverage.report]
 exclude_lines = [
@@ -113,3 +115,11 @@ convention = 'google'
 quote-style = 'single'
 indent-style = 'space'
 skip-magic-trailing-comma = false
+
+[tool.basedpyright]
+include = ["fast_pypi", "tests"]
+
+executionEnvironments = [
+  { root = "tests", reportAny = "none" },
+  { root = "fast_pypi" },
+]

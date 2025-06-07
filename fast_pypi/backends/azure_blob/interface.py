@@ -4,11 +4,11 @@ from collections.abc import Sequence
 from typing_extensions import override
 
 from fast_pypi.backends import AbstractBackendInterface, FileContents, ProjectFileExistsError
-from fast_pypi.env import FastPypiConfig
-from fast_pypi.logging import logger
+from fast_pypi.config import FastPypiConfig
+from fast_pypi.logger import logger
 
 from .azure_blob_utils import azure_blob_container_client
-from .env import AzureBlobConfig
+from .config import AzureBlobConfig
 
 
 class AzureBlobBackend(AbstractBackendInterface):

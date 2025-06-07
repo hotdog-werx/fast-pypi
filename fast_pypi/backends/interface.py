@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from collections.abc import Sequence
 from dataclasses import dataclass
 
-from fast_pypi.env import FastPypiConfig
+from fast_pypi.config import FastPypiConfig
 
 
 class AbstractBackendInterface(ABC):

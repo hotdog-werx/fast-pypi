@@ -7,11 +7,11 @@ from aiofiles import os as aiofiles_os
 from typing_extensions import override
 
 from fast_pypi.backends import AbstractBackendInterface, FileContents, ProjectFileExistsError
-from fast_pypi.env import FastPypiConfig
-from fast_pypi.logging import logger
+from fast_pypi.config import FastPypiConfig
+from fast_pypi.logger import logger
 from fast_pypi.pypi import pypi_normalize
 
-from .env import LocalFSConfig
+from .config import LocalFSConfig
 
 
 class LocalFSBackend(AbstractBackendInterface):

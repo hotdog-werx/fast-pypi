@@ -6,7 +6,7 @@ from azure.storage.blob import ContainerClient
 from fastapi import FastAPI
 from testcontainers.azurite import AzuriteContainer  # pyright: ignore[reportMissingTypeStubs]
 
-from fast_pypi.router import pep503_router
+from fast_pypi.pypi.router import pep503_router
 
 app = FastAPI()
 app.include_router(pep503_router, prefix='/hot/dog', tags=['hotdog'])

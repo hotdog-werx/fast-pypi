@@ -4,7 +4,7 @@ from contextlib import asynccontextmanager
 from azure.identity.aio import DefaultAzureCredential, ManagedIdentityCredential
 from azure.storage.blob.aio import ContainerClient
 
-from .env import AzureBlobConfig
+from .config import AzureBlobConfig
 
 
 @asynccontextmanager

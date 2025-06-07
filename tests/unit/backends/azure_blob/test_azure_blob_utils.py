@@ -7,7 +7,7 @@ from pytest_mock import MockerFixture
 from fast_pypi.backends.azure_blob.azure_blob_utils import (
     azure_blob_container_client,
 )
-from fast_pypi.backends.azure_blob.env import AzureBlobConfig
+from fast_pypi.backends.azure_blob.config import AzureBlobConfig
 
 
 @pytest.mark.asyncio
@@ -26,13 +26,16 @@ async def test_azure_blob_container_client_connection_string(
     )
 
     # Act
-    async with azure_blob_container_client(config=config) as (container_client, base_path):
+    async with azure_blob_container_client(config=config) as (
+        container_client,
+        base_path,
+    ):
         # Assert
         from_conn_str_mock.assert_called_once_with(
             conn_str='this-is-a-connection-string',
             container_name='hotdogcontainer',
         )
-        assert container_client == from_conn_str_mock.return_value.__aenter__.return_value  # pyright: ignore[reportAny]
+        assert container_client == from_conn_str_mock.return_value.__aenter__.return_value
         assert base_path == 'path/to/storage/'
 
 
@@ -64,8 +67,11 @@ async def test_azure_blob_container_client_credential(
     )
 
     # Act
-    async with azure_blob_container_client(config=config) as (container_client, base_path):
+    async with azure_blob_container_client(config=config) as (
+        container_client,
+        base_path,
+    ):
         # Assert
         credential_aenter_mock.assert_called_once()
-        assert container_client == container_client_aenter_mock.return_value  # pyright: ignore[reportAny]
+        assert container_client == container_client_aenter_mock.return_value
         assert base_path == 'path/to/storage/'
