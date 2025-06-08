@@ -20,7 +20,7 @@ from fast_pypi.backends import ProjectFileExistsError
 from fast_pypi.get_backend import get_backend_from_env
 from fast_pypi.logger import logger
 
-from .package_rbac import authorize_dependency
+from .package_rbac import package_rbac_dependency
 
 templates = Jinja2Templates(
     directory=Path(__file__).parent / 'templates',
@@ -31,7 +31,7 @@ pep503_router = APIRouter()
 @pep503_router.get(
     '/simple/',
     response_class=HTMLResponse,
-    dependencies=[authorize_dependency('read')],
+    dependencies=[package_rbac_dependency('read')],
 )
 async def get_simple_index(request: Request) -> HTMLResponse:
     """A simple endpoint to test the router.
@@ -52,7 +52,7 @@ async def get_simple_index(request: Request) -> HTMLResponse:
 @pep503_router.get(
     '/simple/{project_name}/',
     response_class=HTMLResponse,
-    dependencies=[authorize_dependency('read')],
+    dependencies=[package_rbac_dependency('read')],
 )
 async def get_project_simple_index(request: Request, project_name: str) -> HTMLResponse:
     """A simple endpoint to test the router."""
@@ -72,7 +72,7 @@ async def get_project_simple_index(request: Request, project_name: str) -> HTMLR
 
 @pep503_router.get(
     '/artifacts/{project_name}/{version}/{filename}',
-    dependencies=[authorize_dependency('read')],
+    dependencies=[package_rbac_dependency('read')],
 )
 async def get_project_artifact(
     project_name: str,
@@ -125,7 +125,7 @@ class UploadFormData(BaseModel):
 @pep503_router.post(
     '/upload/',
     status_code=status.HTTP_201_CREATED,
-    dependencies=[authorize_dependency('write')],
+    dependencies=[package_rbac_dependency('write')],
 )
 async def upload_project_file(
     body: Annotated[UploadFormData, Form(media_type='multipart/form-data')],
@@ -172,7 +172,7 @@ async def upload_project_file(
 @pep503_router.delete(
     '/delete/{project_name}/{version}',
     status_code=status.HTTP_204_NO_CONTENT,
-    dependencies=[authorize_dependency('delete')],
+    dependencies=[package_rbac_dependency('delete')],
 )
 async def delete_project_version(
     _: Request,

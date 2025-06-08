@@ -73,6 +73,11 @@ def set_project_rbac_decision_func(
     __project_decision_func = func
 
 
+def reset_project_rbac_decision_func() -> None:
+    """Reset the project RBAC decision function to the no-op function."""
+    set_project_rbac_decision_func(_project_decision_noop)
+
+
 async def check_and_raise_project_rbac(rbac_input: ProjectRBACDecisionInput) -> None:
     """Check and raise an exception if the project RBAC decision is not allowed.
 
@@ -119,7 +124,7 @@ class _PackageRbacDependency:
         )
 
 
-def authorize_dependency(operation_type: OperationType) -> DependsClass:
+def package_rbac_dependency(operation_type: OperationType) -> DependsClass:
     """Create a dependency for package RBAC authorization.
 
     Args:
