@@ -23,6 +23,5 @@ def get_backend_from_env() -> AbstractBackendInterface:
             general_config=general_env,
         )
 
-    # Not actually possible to hit this branch
-    msg = f"Backend '{general_env.backend}' is not implemented."
-    raise NotImplementedError(msg)
+    # Not actually possible to hit this branch due to validators
+    raise NotImplementedError  # pragma: no cover
