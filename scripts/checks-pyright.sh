@@ -1,5 +1,5 @@
 #!/bin/bash
 set -euxo pipefail
 
-basedpyright fast_pypi
-basedpyright tests
+uv run basedpyright fast_pypi
+uv run basedpyright tests

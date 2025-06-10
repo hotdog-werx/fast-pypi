@@ -1,8 +1,8 @@
 #!/bin/bash
 set -euxo pipefail
 
-ruff format --check fast_pypi
-ruff format --check tests
+uv run ruff format --check fast_pypi
+uv run ruff format --check tests
 
-ruff check fast_pypi
-ruff check tests
+uv run ruff check fast_pypi
+uv run ruff check tests
