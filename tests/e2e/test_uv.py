@@ -93,3 +93,17 @@ def test_uv_publish(tmp_path: Path, uv_path: str):
             str(project_dir),
         ]
     )
+
+    # Verify the package was installed correctly
+    installed_output = sp.check_output(  # noqa: S603
+        [
+            f'{uv_path}',
+            'pip',
+            'list',
+            '--format=json',
+        ],
+        cwd=project_dir,
+    ).decode('utf-8')
+
+    installed_packages = json.loads(installed_output)
+    assert any(pkg['name'] == 'example-package' and pkg['version'] == '0.2.0' for pkg in installed_packages)
