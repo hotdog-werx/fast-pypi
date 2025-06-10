@@ -1,5 +1,5 @@
 [project]
-name = "example-package"
+name = "{{package_name}}"
 description = ""
 authors = [{ name = "hotdog-werx", email = "james.trousdale@protonmail.com" }]
 license = "MIT"

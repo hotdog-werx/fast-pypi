@@ -1,0 +1,95 @@
+import json
+import subprocess as sp
+from contextlib import ExitStack
+from pathlib import Path
+
+import pytest
+
+from tests.e2e.utils import create_publishable_package
+
+
+@pytest.mark.usefixtures('fast_pypi_demo_app')
+def test_uv_publish(tmp_path: Path, uv_path: str):
+    package_versions = [
+        ('example-package', '0.1.0'),
+        ('example-package', '0.2.0'),
+        ('example-package', '0.2.0a1'),
+        ('other-package', '0.1.0'),
+    ]
+
+    with ExitStack() as stack:
+        for package_name, package_version in package_versions:
+            package_path = stack.enter_context(
+                create_publishable_package(
+                    package_type='uv',
+                    package_name=package_name,
+                    package_version=package_version,
+                )
+            )
+
+            _ = sp.check_output(  # noqa: S603
+                [
+                    uv_path,
+                    'build',
+                    str(package_path),
+                ],
+                cwd=package_path,
+            )
+            _ = sp.check_output(  # noqa: S603
+                [
+                    uv_path,
+                    'publish',
+                    '--publish-url',
+                    'http://localhost:8000/fast-pypi/upload/',
+                    '--username',
+                    'hot',
+                    '--password',
+                    'dog',
+                ],
+                cwd=package_path,
+            )
+
+    pip_versions_example_package_output = sp.check_output(  # noqa: S603
+        [
+            f'{uv_path}x',
+            'pip',
+            'index',
+            'versions',
+            'example-package',
+            '--index-url',
+            'http://hot:dog@localhost:8000/fast-pypi/simple/',
+            '--json',
+            '--pre',
+        ]
+    ).decode('utf-8')
+
+    pip_versions_example_package = json.loads(pip_versions_example_package_output)
+
+    assert pip_versions_example_package['name'] == 'example-package'
+    assert sorted(
+        pip_versions_example_package['versions'],
+    ) == ['0.1.0', '0.2.0', '0.2.0a1']
+
+    project_dir = tmp_path / 'test-project'
+
+    _ = sp.check_output(  # noqa: S603
+        [
+            uv_path,
+            'init',
+            str(project_dir),
+            '--name',
+            'test-project',
+        ]
+    )
+    _ = sp.check_output(  # noqa: S603
+        [
+            uv_path,
+            'add',
+            'example-package==0.2.0',
+            '--index',
+            'http://hot:dog@localhost:8000/fast-pypi/simple/',
+            '--no-cache',
+            '--project',
+            str(project_dir),
+        ]
+    )
