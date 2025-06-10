@@ -12,6 +12,12 @@ uv-install:
 checks:
 	./scripts/checks.sh
 
+checks-ruff:
+	./scripts/checks-ruff.sh
+
+checks-pyright:
+	./scripts/checks-pyright.sh
+
 tests:
 	./scripts/tests.sh
 
