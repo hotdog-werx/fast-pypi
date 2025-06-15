@@ -101,14 +101,13 @@ def test_uv_publish(tmp_path: Path, uv_path: str):
     installed_output = sp.check_output(  # noqa: S603
         [
             f'{uv_path}',
-            '--project',
-            str(project_dir),
             'pip',
             'list',
             '--format=json',
         ],
         text=True,
         start_new_session=True,
+        cwd=str(project_dir),
     )
 
     installed_packages = json.loads(installed_output)
