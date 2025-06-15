@@ -30,14 +30,16 @@ def test_uv_publish(tmp_path: Path, uv_path: str):
             _ = sp.check_output(  # noqa: S603
                 [
                     uv_path,
-                    'build',
+                    '--project',
                     str(package_path),
+                    'build',
                 ],
-                cwd=package_path,
             )
             _ = sp.check_output(  # noqa: S603
                 [
                     uv_path,
+                    '--project',
+                    str(package_path),
                     'publish',
                     '--publish-url',
                     'http://localhost:8000/fast-pypi/upload/',
@@ -45,13 +47,14 @@ def test_uv_publish(tmp_path: Path, uv_path: str):
                     'hot',
                     '--password',
                     'dog',
+                    str(package_path / 'dist' / '*'),
                 ],
-                cwd=package_path,
             )
 
     pip_versions_example_package_output = sp.check_output(  # noqa: S603
         [
-            f'{uv_path}x',
+            f'{uv_path}',
+            'run',
             'pip',
             'index',
             'versions',
@@ -98,12 +101,15 @@ def test_uv_publish(tmp_path: Path, uv_path: str):
     installed_output = sp.check_output(  # noqa: S603
         [
             f'{uv_path}',
+            '--project',
+            str(project_dir),
             'pip',
             'list',
             '--format=json',
         ],
-        cwd=project_dir,
     ).decode('utf-8')
 
     installed_packages = json.loads(installed_output)
-    assert any(pkg['name'] == 'example-package' and pkg['version'] == '0.2.0' for pkg in installed_packages)
+    assert any(pkg['name'] == 'example-package' and pkg['version'] == '0.2.0' for pkg in installed_packages), (
+        installed_packages
+    )

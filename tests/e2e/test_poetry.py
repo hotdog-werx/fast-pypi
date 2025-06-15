@@ -32,33 +32,39 @@ def test_poetry_publish(tmp_path: Path, uv_path: str):
             # Build the package with poetry
             _ = sp.check_output(  # noqa: S603
                 [
-                    f'{uv_path}x',
+                    uv_path,
+                    'run',
                     'poetry',
                     'build',
+                    '--project',
+                    str(package_path),
                 ],
-                cwd=package_path,
             )
 
             # Publish to our local PyPI server
             _ = sp.check_output(  # noqa: S603
                 [
-                    f'{uv_path}x',
+                    uv_path,
+                    'run',
                     'poetry',
+                    '--project',
+                    str(package_path),
                     'config',
                     'repositories.fastpypi',
                     'http://hot:dog@localhost:8000/fast-pypi/upload/',
                 ],
-                cwd=package_path,
             )
             _ = sp.check_output(  # noqa: S603
                 [
-                    f'{uv_path}x',
+                    uv_path,
+                    'run',
                     'poetry',
+                    '--project',
+                    str(package_path),
                     'publish',
                     '--repository',
                     'fastpypi',
                 ],
-                cwd=package_path,
                 env={
                     **os.environ,
                     'POETRY_HTTP_BASIC_FASTPYPI_USERNAME': 'hot',
@@ -69,7 +75,8 @@ def test_poetry_publish(tmp_path: Path, uv_path: str):
     # Verify published versions using pip
     pip_versions_example_package_output = sp.check_output(  # noqa: S603
         [
-            f'{uv_path}x',
+            uv_path,
+            'run',
             'pip',
             'index',
             'versions',
@@ -95,40 +102,46 @@ def test_poetry_publish(tmp_path: Path, uv_path: str):
     # Initialize a new Poetry project
     _ = sp.check_output(  # noqa: S603
         [
-            f'{uv_path}x',
+            uv_path,
+            'run',
             'poetry',
+            '--project',
+            str(project_dir),
             'init',
             '--name=test-project',
             '--description=""',
             '--author=""',
             '--no-interaction',
         ],
-        cwd=project_dir,
     )
 
     # Add our published package as a dependency
     _ = sp.check_output(  # noqa: S603
         [
-            f'{uv_path}x',
+            uv_path,
+            'run',
             'poetry',
+            '--project',
+            str(project_dir),
             'source',
             'add',
             'fastpypi',
             'http://localhost:8000/fast-pypi/simple/',
         ],
-        cwd=project_dir,
     )
     _ = sp.check_output(  # noqa: S603
         [
-            f'{uv_path}x',
+            uv_path,
+            'run',
             'poetry',
+            '--project',
+            str(project_dir),
             'add',
             'example-package==0.2.0',
             '--source',
             'fastpypi',
             '-vvv',  # Add verbose output
         ],
-        cwd=project_dir,
         env={
             **os.environ,
             'POETRY_HTTP_BASIC_FASTPYPI_USERNAME': 'hot',
@@ -140,11 +153,18 @@ def test_poetry_publish(tmp_path: Path, uv_path: str):
     # Verify the package was installed correctly
     installed_output = sp.check_output(  # noqa: S603
         [
-            f'{uv_path}x',
+            uv_path,
+            'run',
             'poetry',
+            '--project',
+            str(project_dir),
             'show',
             '--tree',
         ],
-        cwd=project_dir,
+        env={
+            **os.environ,
+            'POETRY_HTTP_BASIC_FASTPYPI_USERNAME': 'hot',
+            'POETRY_HTTP_BASIC_FASTPYPI_PASSWORD': 'dog',
+        },
     ).decode('utf-8')
     assert 'example-package 0.2.0' in installed_output
