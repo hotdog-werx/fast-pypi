@@ -53,7 +53,7 @@ def test_uv_publish(tmp_path: Path, uv_path: str):
 
     pip_versions_example_package_output = sp.check_output(  # noqa: S603
         [
-            f'{uv_path}',
+            uv_path,
             'run',
             'pip',
             'index',
@@ -100,7 +100,9 @@ def test_uv_publish(tmp_path: Path, uv_path: str):
     # Verify the package was installed correctly
     installed_output = sp.check_output(  # noqa: S603
         [
-            f'{uv_path}',
+            uv_path,
+            '--project',
+            str(project_dir),
             'pip',
             'list',
             '--format=json',

@@ -146,6 +146,7 @@ def test_poetry_publish(tmp_path: Path, uv_path: str):
             **os.environ,
             'POETRY_HTTP_BASIC_FASTPYPI_USERNAME': 'hot',
             'POETRY_HTTP_BASIC_FASTPYPI_PASSWORD': 'dog',
+            'PYTHON_KEYRING_BACKEND': 'keyring.backends.null.Keyring',
         },
         stderr=sp.PIPE,  # Capture stderr
         text=True,
