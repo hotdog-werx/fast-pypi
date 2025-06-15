@@ -117,5 +117,5 @@ def test_uv_publish(tmp_path: Path, uv_path: str):
         None,
     )
 
-    assert example_package is not None, list(pkg['name'] for pkg in installed_packages)
+    assert example_package is not None
     assert example_package['version'] == '0.2.0', example_package
