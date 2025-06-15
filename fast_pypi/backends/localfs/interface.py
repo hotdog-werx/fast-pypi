@@ -116,13 +116,13 @@ class LocalFSBackend(AbstractBackendInterface):
             )
             return None
 
-        async with aiofiles.open(file_path, mode='rb') as f:  # pyright: ignore[reportUnknownMemberType]
+        async with aiofiles.open(file_path, mode='rb') as f:
             content = await f.read()
 
         # Check if the SHA256 digest file exists
         if await aiofiles_os.path.exists(sha256_path):
             # Read the SHA256 digest from the file
-            async with aiofiles.open(sha256_path, 'rb') as f:  # pyright: ignore[reportUnknownMemberType]
+            async with aiofiles.open(sha256_path, 'rb') as f:
                 sha256_digest = (await f.read()).decode('utf-8').strip()
         else:
             logger.warning(
@@ -137,7 +137,7 @@ class LocalFSBackend(AbstractBackendInterface):
             # Calculate the SHA256 digest if the file does not exist and
             # save it for future use
             sha256_digest = hashlib.sha256(content).hexdigest()
-            async with aiofiles.open(sha256_path, 'wb') as f:  # pyright: ignore[reportUnknownMemberType]
+            async with aiofiles.open(sha256_path, 'wb') as f:
                 _ = await f.write(sha256_digest.encode('utf-8'))
 
         return FileContents(
@@ -182,11 +182,11 @@ class LocalFSBackend(AbstractBackendInterface):
                 project_name=project_name,
             )
 
-        async with aiofiles.open(project_version_path / filename, 'wb') as f:  # pyright: ignore[reportUnknownMemberType]
+        async with aiofiles.open(project_version_path / filename, 'wb') as f:
             _ = await f.write(file_content)
 
         set_sha256_digest = sha256_digest or hashlib.sha256(file_content).hexdigest()
-        async with aiofiles.open(project_version_path / f'{filename}.sha256', 'wb') as f:  # pyright: ignore[reportUnknownMemberType]
+        async with aiofiles.open(project_version_path / f'{filename}.sha256', 'wb') as f:
             _ = await f.write(set_sha256_digest.encode('utf-8'))
 
     @override

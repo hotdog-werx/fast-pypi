@@ -24,7 +24,7 @@ async def test_localfs_get_file_contents_missing_sha256(
 
     # Create wheel file directly without SHA256 file
     wheel_path = project_version_path / filename
-    async with aiofiles.open(str(wheel_path), 'wb') as f:  # pyright: ignore[reportUnknownMemberType]
+    async with aiofiles.open(str(wheel_path), 'wb') as f:
         _ = await f.write(content)
 
     # First get_file_contents should compute and create SHA256 file
@@ -42,6 +42,6 @@ async def test_localfs_get_file_contents_missing_sha256(
     # Verify SHA256 file was actually created and contains correct hash
     sha256_path = project_version_path / f'{filename}.sha256'
     assert sha256_path.exists()
-    async with aiofiles.open(str(sha256_path), 'rb') as f:  # pyright: ignore[reportUnknownMemberType]
+    async with aiofiles.open(str(sha256_path), 'rb') as f:
         stored_sha256 = (await f.read()).decode('utf-8').strip()
         assert stored_sha256 == expected_sha256

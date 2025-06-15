@@ -1,4 +1,5 @@
 import os
+import pprint as pp
 import tempfile
 
 import uvicorn
@@ -15,7 +16,7 @@ app.include_router(pep503_router, prefix='/hot/dog', tags=['hotdog'])
 def run_with_localfs_backend() -> None:
     os.environ['FAST_PYPI_BACKEND'] = 'localfs'
     with tempfile.TemporaryDirectory() as temp_dir:
-        print(f'Setting FAST_PYPI_LOCALFS_ROOT_PATH to {temp_dir}/hot/dog/storage')
+        pp.pp(f'Setting FAST_PYPI_LOCALFS_ROOT_PATH to {temp_dir}/hot/dog/storage')
         os.environ['FAST_PYPI_LOCALFS_ROOT_PATH'] = f'{temp_dir}/hot/dog/storage'
         uvicorn.run(
             app,
@@ -38,7 +39,7 @@ def run_with_azure_backend() -> None:
 
         for key, value in env_settings.items():
             os.environ[key] = value
-            print(f'Setting {key} to {value}')
+            pp.pp(f'Setting {key} to {value}')
 
         uvicorn.run(
             app,
@@ -47,5 +48,4 @@ def run_with_azure_backend() -> None:
 
 
 if __name__ == '__main__':
-    # run_with_localfs_backend()
     run_with_azure_backend()

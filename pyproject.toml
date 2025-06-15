@@ -9,7 +9,7 @@ dynamic = ['version']
 
 dependencies = [
   'pydantic >=2.11.4, <3',
-  'fastapi >=0.115.12, <1',
+  'fastapi-slim >=0.115.12, <1',
   'python-multipart >=0.0.20, <1',
   'jinja2 >=3.1.6, <4',
   'orjson >=3.10.18, <4',
@@ -26,7 +26,6 @@ azure_blob = [
 
 [dependency-groups]
 dev = [
-  'ruff >=0.11.13, <1',
   'basedpyright >= 1.29.2, <2',
   'coverage >=7.2.3',
   'greenlet >=3.1.1, <4',
@@ -125,3 +124,33 @@ executionEnvironments = [
   { root = "tests", reportAny = "none" },
   { root = "fast_pypi" },
 ]
+
+[tool.poe.tasks.ruff-check]
+sequence = [
+  { cmd = "uv run ruff format --check fast_pypi" },
+  { cmd = "uv run ruff format --check tests" },
+  { cmd = "uv run ruff check fast_pypi" },
+  { cmd = "uv run ruff check tests" },
+]
+
+[tool.poe.tasks.pyright]
+sequence = [
+  { cmd = "uv run basedpyright fast_pypi" },
+  { cmd = "uv run basedpyright tests" },
+]
+
+[tool.poe.tasks.tests]
+sequence = [
+  { cmd = "uv run coverage run --concurrency 'thread,greenlet' --source fast_pypi -m pytest -vv ." },
+  { cmd = "uv run coverage report -m --fail-under ${COVERAGE_FAIL_UNDER:-100}" },
+]
+
+[tool.poe.tasks.checks]
+sequence = [
+  { cmd = "uv run poe ruff-check" },
+  { cmd = "uv run poe pyright" },
+  { cmd = "uv run poe tests" },
+]
+
+[tool.poe.tasks.local-dev]
+sequence = [ {cmd = "uv run python -m tests.local_dev"} ]

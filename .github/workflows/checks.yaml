@@ -23,15 +23,18 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
 
+    - name: Install tools
+      run: ./scripts/tools.sh
+
     - name: Install dependencies
       run: |
         uv sync --group dev --all-extras
 
     - name: Run ruff checks
-      run: make checks-ruff
+      run: uv run poe ruff-check
 
     - name: Run pyright checks
-      run: make checks-pyright
+      run: uv run poe pyright
 
     - name: Run tests
-      run: make tests
+      run: uv run poe tests

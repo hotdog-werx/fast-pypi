@@ -45,19 +45,8 @@ def test_poetry_publish(tmp_path: Path, uv_path: str):
                     f'{uv_path}x',
                     'poetry',
                     'config',
-                    'repositories.fast-pypi',
+                    'repositories.fastpypi',
                     'http://hot:dog@localhost:8000/fast-pypi/upload/',
-                ],
-                cwd=package_path,
-            )
-            _ = sp.check_output(  # noqa: S603
-                [
-                    f'{uv_path}x',
-                    'poetry',
-                    'config',
-                    'http-basic.fast-pypi',
-                    'hot',
-                    'dog',
                 ],
                 cwd=package_path,
             )
@@ -67,9 +56,14 @@ def test_poetry_publish(tmp_path: Path, uv_path: str):
                     'poetry',
                     'publish',
                     '--repository',
-                    'fast-pypi',
+                    'fastpypi',
                 ],
                 cwd=package_path,
+                env={
+                    **os.environ,
+                    'POETRY_HTTP_BASIC_FASTPYPI_USERNAME': 'hot',
+                    'POETRY_HTTP_BASIC_FASTPYPI_PASSWORD': 'dog',
+                },
             )
 
     # Verify published versions using pip
