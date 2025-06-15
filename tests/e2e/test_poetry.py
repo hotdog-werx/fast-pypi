@@ -130,6 +130,7 @@ def test_poetry_publish(tmp_path: Path, uv_path: str):
         ],
         text=True,
         start_new_session=True,
+        cwd=str(project_dir),
     )
     _ = sp.check_output(  # noqa: S603
         [  # noqa: S607
@@ -151,6 +152,7 @@ def test_poetry_publish(tmp_path: Path, uv_path: str):
         stderr=sp.PIPE,  # Capture stderr
         text=True,
         start_new_session=True,
+        cwd=str(project_dir),
     )
 
     # Verify the package was installed correctly

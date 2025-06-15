@@ -63,7 +63,7 @@ def test_uv_publish(tmp_path: Path, uv_path: str):
             'http://hot:dog@localhost:8000/fast-pypi/simple/',
             '--json',
             '--pre',
-        ]
+        ],
     ).decode('utf-8')
 
     pip_versions_example_package = json.loads(pip_versions_example_package_output)
@@ -74,15 +74,17 @@ def test_uv_publish(tmp_path: Path, uv_path: str):
     ) == ['0.1.0', '0.2.0', '0.2.0a1']
 
     project_dir = tmp_path / 'test-project'
+    project_dir.mkdir(parents=True, exist_ok=True)
 
     _ = sp.check_output(  # noqa: S603
         [
             uv_path,
             'init',
-            str(project_dir),
+            '.',
             '--name',
             'test-project',
-        ]
+        ],
+        cwd=str(project_dir),
     )
     _ = sp.check_output(  # noqa: S603
         [
@@ -94,7 +96,8 @@ def test_uv_publish(tmp_path: Path, uv_path: str):
             '--no-cache',
             '--project',
             str(project_dir),
-        ]
+        ],
+        cwd=str(project_dir),
     )
 
     # Verify the package was installed correctly
