@@ -39,6 +39,8 @@ def test_poetry_publish(tmp_path: Path, uv_path: str):
                     '--project',
                     str(package_path),
                 ],
+                text=True,
+                start_new_session=True,
             )
 
             # Publish to our local PyPI server
@@ -53,6 +55,8 @@ def test_poetry_publish(tmp_path: Path, uv_path: str):
                     'repositories.fastpypi',
                     'http://hot:dog@localhost:8000/fast-pypi/upload/',
                 ],
+                text=True,
+                start_new_session=True,
             )
             _ = sp.check_output(  # noqa: S603
                 [
@@ -70,6 +74,8 @@ def test_poetry_publish(tmp_path: Path, uv_path: str):
                     'POETRY_HTTP_BASIC_FASTPYPI_USERNAME': 'hot',
                     'POETRY_HTTP_BASIC_FASTPYPI_PASSWORD': 'dog',
                 },
+                text=True,
+                start_new_session=True,
             )
 
     # Verify published versions using pip
@@ -85,8 +91,10 @@ def test_poetry_publish(tmp_path: Path, uv_path: str):
             'http://hot:dog@localhost:8000/fast-pypi/simple/',
             '--json',
             '--pre',
-        ]
-    ).decode('utf-8')
+        ],
+        text=True,
+        start_new_session=True,
+    )
 
     pip_versions_example_package = json.loads(pip_versions_example_package_output)
 
@@ -113,6 +121,8 @@ def test_poetry_publish(tmp_path: Path, uv_path: str):
             '--author=""',
             '--no-interaction',
         ],
+        text=True,
+        start_new_session=True,
     )
 
     # Add our published package as a dependency
@@ -128,6 +138,8 @@ def test_poetry_publish(tmp_path: Path, uv_path: str):
             'fastpypi',
             'http://localhost:8000/fast-pypi/simple/',
         ],
+        text=True,
+        start_new_session=True,
     )
     _ = sp.check_output(  # noqa: S603
         [
@@ -148,6 +160,8 @@ def test_poetry_publish(tmp_path: Path, uv_path: str):
             'POETRY_HTTP_BASIC_FASTPYPI_PASSWORD': 'dog',
         },
         stderr=sp.PIPE,  # Capture stderr
+        text=True,
+        start_new_session=True,
     )
 
     # Verify the package was installed correctly
@@ -166,5 +180,7 @@ def test_poetry_publish(tmp_path: Path, uv_path: str):
             'POETRY_HTTP_BASIC_FASTPYPI_USERNAME': 'hot',
             'POETRY_HTTP_BASIC_FASTPYPI_PASSWORD': 'dog',
         },
-    ).decode('utf-8')
+        text=True,
+        start_new_session=True,
+    )
     assert 'example-package 0.2.0' in installed_output

@@ -110,6 +110,10 @@ def test_uv_publish(tmp_path: Path, uv_path: str):
     ).decode('utf-8')
 
     installed_packages = json.loads(installed_output)
-    assert any(pkg['name'] == 'example-package' and pkg['version'] == '0.2.0' for pkg in installed_packages), (
-        installed_packages
+    example_package = next(
+        (pkg for pkg in installed_packages if pkg['name'] == 'example-package'),
+        None,
     )
+
+    assert example_package is not None
+    assert example_package['version'] == '0.2.0', example_package
