@@ -31,9 +31,7 @@ def test_poetry_publish(tmp_path: Path, uv_path: str):
 
             # Build the package with poetry
             _ = sp.check_output(  # noqa: S603
-                [
-                    uv_path,
-                    'run',
+                [  # noqa: S607
                     'poetry',
                     'build',
                     '--project',
@@ -45,9 +43,7 @@ def test_poetry_publish(tmp_path: Path, uv_path: str):
 
             # Publish to our local PyPI server
             _ = sp.check_output(  # noqa: S603
-                [
-                    uv_path,
-                    'run',
+                [  # noqa: S607
                     'poetry',
                     '--project',
                     str(package_path),
@@ -59,9 +55,7 @@ def test_poetry_publish(tmp_path: Path, uv_path: str):
                 start_new_session=True,
             )
             _ = sp.check_output(  # noqa: S603
-                [
-                    uv_path,
-                    'run',
+                [  # noqa: S607
                     'poetry',
                     '--project',
                     str(package_path),
@@ -109,9 +103,7 @@ def test_poetry_publish(tmp_path: Path, uv_path: str):
 
     # Initialize a new Poetry project
     _ = sp.check_output(  # noqa: S603
-        [
-            uv_path,
-            'run',
+        [  # noqa: S607
             'poetry',
             '--project',
             str(project_dir),
@@ -127,9 +119,7 @@ def test_poetry_publish(tmp_path: Path, uv_path: str):
 
     # Add our published package as a dependency
     _ = sp.check_output(  # noqa: S603
-        [
-            uv_path,
-            'run',
+        [  # noqa: S607
             'poetry',
             '--project',
             str(project_dir),
@@ -142,9 +132,7 @@ def test_poetry_publish(tmp_path: Path, uv_path: str):
         start_new_session=True,
     )
     _ = sp.check_output(  # noqa: S603
-        [
-            uv_path,
-            'run',
+        [  # noqa: S607
             'poetry',
             '--project',
             str(project_dir),
@@ -166,9 +154,7 @@ def test_poetry_publish(tmp_path: Path, uv_path: str):
 
     # Verify the package was installed correctly
     installed_output = sp.check_output(  # noqa: S603
-        [
-            uv_path,
-            'run',
+        [  # noqa: S607
             'poetry',
             '--project',
             str(project_dir),

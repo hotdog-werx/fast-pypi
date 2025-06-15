@@ -86,7 +86,7 @@ def uv_path() -> str:
     uv_path = next((path for path in uv_candidates if Path(path).exists()), None)
 
     if uv_path is None:
-        msg = 'Could not find uv executable. Please install it with: curl -LsSf https://astral.sh/uv/install.sh | sh'
+        msg = 'Could not find uv executable.'
         raise DemoAppError(msg)
 
     return str(uv_path)
