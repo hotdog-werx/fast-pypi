@@ -83,6 +83,7 @@ mkdir -p "$project_dir"
     # Configure source and install package
     poetry source add fastpypi http://localhost:8100/fast-pypi/simple/
 
+    export POETRY_HTTP_BASIC_REPO=
     export POETRY_HTTP_BASIC_FASTPYPI_USERNAME=hot
     export POETRY_HTTP_BASIC_FASTPYPI_PASSWORD=dog
     poetry add example-package==0.2.0 --source fastpypi
