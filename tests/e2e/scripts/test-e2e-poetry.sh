@@ -44,13 +44,22 @@ for version in "${versions[@]}"; do
     "$SED" -i "s/{{package_version}}/$pkg_version/g" "$pkg_dir/src/version.py"
 
     # Build the package
-    poetry build --project "$pkg_dir"
+    (
+        cd "$pkg_dir" || exit 1
 
-    # Configure and publish to local PyPI
-    poetry --project "$pkg_dir" config repositories.fastpypi http://hot:dog@localhost:8100/fast-pypi/upload/
-    POETRY_HTTP_BASIC_FASTPYPI_USERNAME=hot \
-    POETRY_HTTP_BASIC_FASTPYPI_PASSWORD=dog \
-    poetry --project "$pkg_dir" publish --repository fastpypi
+        # Disable keyring
+        export PYTHON_KEYRING_BACKEND="keyring.backends.null.Keyring"
+
+        poetry build --project "$pkg_dir"
+
+        # Configure and publish to local PyPI
+        poetry --project "$pkg_dir" config repositories.fastpypiupload http://hot:dog@localhost:8100/fast-pypi/upload/
+        
+        export POETRY_REPOSITORIES_FASTPYPIUPLOAD_URL="http://localhost:8100/fast-pypi/upload/"
+        export POETRY_HTTP_BASIC_FASTPYPIUPLOAD_USERNAME=hot
+        export POETRY_HTTP_BASIC_FASTPYPIUPLOAD_PASSWORD=dog
+        poetry --project "$pkg_dir" publish --repository fastpypi
+    )
 done
 
 # Verify the published versions
@@ -73,18 +82,23 @@ mkdir -p "$project_dir"
 (
     cd "$project_dir" || exit 1
 
+    # Disable keyring
+    export PYTHON_KEYRING_BACKEND="keyring.backends.null.Keyring"
+
     # Initialize new poetry project
     poetry init \
         --name=test-project \
         --description="" \
         --author="" \
         --no-interaction
-    poetry config keyring.enabled false
 
     # Configure source and install package
-    poetry source add --priority=supplemental fastpypi http://localhost:8100/fast-pypi/simple/
-    poetry config http-basic.fastpypi hot dog
-    poetry add example-package==0.2.0 --source fastpypi --no-cache
+    poetry source add fastpypi http://localhost:8100/fast-pypi/simple/
+
+    export POETRY_REPOSITORIES_FASTPYPI_URL="http://localhost:8100/fast-pypi/upload/"
+    export POETRY_HTTP_BASIC_FASTPYPI_USERNAME=hot
+    export POETRY_HTTP_BASIC_FASTPYPI_PASSWORD=dog
+    poetry add example-package==0.2.0 --source fastpypi
 
     # Verify installation
     installed_packages=$(poetry show)
