@@ -70,29 +70,31 @@ fi
 project_dir="$TEST_DIR/test-project"
 mkdir -p "$project_dir"
 
-# Initialize new poetry project
-poetry --project "$project_dir" init \
-    --name=test-project \
-    --description="" \
-    --author="" \
-    --no-interaction
+(
+    cd "$project_dir" || exit 1
 
-# Configure source and install package
-poetry --project "$project_dir" source add fastpypi http://localhost:8100/fast-pypi/simple/
+    # Initialize new poetry project
+    poetry init \
+        --name=test-project \
+        --description="" \
+        --author="" \
+        --no-interaction
 
-POETRY_HTTP_BASIC_FASTPYPI_USERNAME=hot \
-POETRY_HTTP_BASIC_FASTPYPI_PASSWORD=dog \
-poetry --project "$project_dir" add example-package==0.2.0 --source fastpypi
+    # Configure source and install package
+    poetry source add fastpypi http://localhost:8100/fast-pypi/simple/
 
-# Verify installation
-installed_packages=$(POETRY_HTTP_BASIC_FASTPYPI_USERNAME=hot \
-    POETRY_HTTP_BASIC_FASTPYPI_PASSWORD=dog \
-    poetry --project "$project_dir" show --tree)
+    export POETRY_HTTP_BASIC_FASTPYPI_USERNAME=hot
+    export POETRY_HTTP_BASIC_FASTPYPI_PASSWORD=dog
+    poetry add example-package==0.2.0 --source fastpypi
 
-if ! echo "$installed_packages" | grep -q "example-package 0.2.0"; then
-    echo "Package not installed correctly"
-    exit 1
-fi
+    # Verify installation
+    installed_packages=$(poetry show --tree)
+
+    if ! echo "$installed_packages" | grep -q "example-package 0.2.0"; then
+        echo "Package not installed correctly"
+        exit 1
+    fi
+)
 
 echo "All tests passed successfully!"
 

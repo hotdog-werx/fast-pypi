@@ -76,11 +76,14 @@ uv add example-package==0.2.0 \
     --project "$project_dir"
 
 # Verify the package was installed correctly
-installed_json=$(uv --project "$project_dir" pip list --format=json)
+(
+    cd "$project_dir" || exit 1
+    installed_json=$(uv --project "$project_dir" pip list --format=json)
 
-if ! echo "$installed_json" | grep -q '"name": "example-package", "version": "0.2.0"'; then
-    echo "Package not installed correctly"
-    exit 1
-fi
+    if ! echo "$installed_json" | grep -q '"name": "example-package", "version": "0.2.0"'; then
+        echo "Package not installed correctly"
+        exit 1
+    fi
+)
 
 echo "All tests passed successfully!"
