@@ -79,14 +79,12 @@ mkdir -p "$project_dir"
         --description="" \
         --author="" \
         --no-interaction
+    poetry config keyring.enabled false
 
     # Configure source and install package
-    poetry source add fastpypi http://localhost:8100/fast-pypi/simple/
-
-    export POETRY_HTTP_BASIC_REPO=
-    export POETRY_HTTP_BASIC_FASTPYPI_USERNAME=hot
-    export POETRY_HTTP_BASIC_FASTPYPI_PASSWORD=dog
-    poetry add example-package==0.2.0 --source fastpypi
+    poetry source add --priority=supplemental fastpypi http://localhost:8100/fast-pypi/simple/
+    poetry config http-basic.fastpypi hot dog
+    poetry add example-package==0.2.0 --source fastpypi --no-cache
 
     # Verify installation
     installed_packages=$(poetry show)
