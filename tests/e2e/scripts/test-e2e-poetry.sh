@@ -50,15 +50,15 @@ for version in "${versions[@]}"; do
         # Disable keyring
         export PYTHON_KEYRING_BACKEND="keyring.backends.null.Keyring"
 
-        poetry build --project "$pkg_dir"
+        poetry build
 
         # Configure and publish to local PyPI
-        poetry --project "$pkg_dir" config repositories.fastpypiupload http://hot:dog@localhost:8100/fast-pypi/upload/
+        poetry config repositories.fastpypiupload http://hot:dog@localhost:8100/fast-pypi/upload/
         
         export POETRY_REPOSITORIES_FASTPYPIUPLOAD_URL="http://localhost:8100/fast-pypi/upload/"
         export POETRY_HTTP_BASIC_FASTPYPIUPLOAD_USERNAME=hot
         export POETRY_HTTP_BASIC_FASTPYPIUPLOAD_PASSWORD=dog
-        poetry --project "$pkg_dir" publish --repository fastpypi
+        poetry publish --repository fastpypiupload
     )
 done
 
