@@ -1,8 +1,14 @@
-.codeguide
-.editorconfig
-Makefile
+# VS Code settings
+.vscode
 
+# Temporary files
+/tmp*
+
+# Python cache files
+.venv
 __pycache__/
 *.py[cod]
-*$py.class
+*.pyo
+
+# CI artifacts
 .coverage

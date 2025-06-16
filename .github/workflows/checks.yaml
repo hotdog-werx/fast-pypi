@@ -1,0 +1,88 @@
+name: Checks
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.10', '3.11', '3.12', '3.13']
+      fail-fast: false
+    
+    name: Lint Python ${{ matrix.python-version }}
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup uv
+      uses: astral-sh/setup-uv@v6
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Install tools
+      run: ./scripts/tools.sh
+
+    - name: Install dependencies
+      run: uv sync --group dev --all-extras
+
+    - name: Run ruff checks
+      run: uv run poe ruff-check
+
+    - name: Run pyright checks
+      run: uv run poe pyright
+
+  unit-tests:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.10', '3.11', '3.12', '3.13']
+      fail-fast: false
+    
+    name: Unit Tests Python ${{ matrix.python-version }}
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup uv
+      uses: astral-sh/setup-uv@v6
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Install tools
+      run: ./scripts/tools.sh
+
+    - name: Install dependencies
+      run: uv sync --group dev --all-extras
+
+    - name: Run tests
+      run: uv run poe tests
+
+  e2e-tests:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        client: ['uv', 'poetry']
+      fail-fast: false
+    
+    name: E2E Test ${{ matrix.client }}
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup uv
+      uses: astral-sh/setup-uv@v6
+      with:
+        python-version: '3.13'
+
+    - name: Install tools
+      run: ./scripts/tools.sh
+
+    - name: Install dependencies
+      run: uv sync --group dev --all-extras
+
+    - name: Run tests
+      run: ./tests/e2e/scripts/test-e2e-${{ matrix.client }}.sh

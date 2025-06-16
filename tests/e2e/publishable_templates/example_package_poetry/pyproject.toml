@@ -1,0 +1,12 @@
+[tool.poetry]
+name = "{{package_name}}"
+version = "{{package_version}}"
+description = ""
+authors = ["hotdog-werx <james.trousdale@protonmail.com>"]
+readme = "README.md"
+license = "MIT"
+packages = [{ include = "src" }]
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

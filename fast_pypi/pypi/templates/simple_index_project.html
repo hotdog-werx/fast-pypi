@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>Links for {{project_name}}</title>
+    </head>
+    <body>
+        <h1>Links for {{project_name}}</h1>
+        {% for (version, filename) in project_files %}
+            <a href="{{url_for('get_project_artifact', project_name=project_name, version=version, filename=filename)}}">{{filename}}</a><br>
+        {% endfor %}
+    </body>
+</html>

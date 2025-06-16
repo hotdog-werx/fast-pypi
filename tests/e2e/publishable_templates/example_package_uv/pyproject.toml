@@ -1,0 +1,21 @@
+[project]
+name = "{{package_name}}"
+description = ""
+authors = [{ name = "hotdog-werx", email = "james.trousdale@protonmail.com" }]
+license = "MIT"
+readme = "README.md"
+requires-python = ">=3.10"
+dynamic = ['version']
+
+[tool.hatch.version]
+path = 'src/version.py'
+
+[tool.hatch.build.targets.sdist]
+include = ['/README.md', 'src']
+
+[tool.hatch.build.targets.wheel]
+packages = ['src']
+
+[build-system]
+requires = ['hatchling']
+build-backend = 'hatchling.build'

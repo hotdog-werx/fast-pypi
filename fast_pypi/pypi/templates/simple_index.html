@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>Simple Index</title>
+    </head>
+    <body>
+        <h1>Simple Index</h1>
+        <ul>
+        {% for project_name in project_names %}
+            <li><a href="{{project_name}}/">{{project_name}}</a></li>
+        {% endfor %}
+        </ul>
+    </body>
+</html>
