@@ -88,7 +88,7 @@ mkdir -p "$project_dir"
     poetry add example-package==0.2.0 --source fastpypi
 
     # Verify installation
-    installed_packages=$(poetry show --tree)
+    installed_packages=$(poetry show)
 
     if ! echo "$installed_packages" | grep -q "example-package 0.2.0"; then
         echo "Package not installed correctly"

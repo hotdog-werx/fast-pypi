@@ -55,33 +55,51 @@ versions_json=$(uv run pip index versions example-package \
     --index-url http://hot:dog@localhost:8100/fast-pypi/simple/ \
     --json --pre)
 
-# Check if we got all versions
-if ! echo "$versions_json" | grep -q '"0.1.0"' || \
-   ! echo "$versions_json" | grep -q '"0.2.0"' || \
-   ! echo "$versions_json" | grep -q '"0.2.0a1"'; then
-    echo "Missing expected versions"
+# Check if jq is available
+if ! command -v jq >/dev/null 2>&1; then
+    echo "jq is required but not installed. Please install it first."
     exit 1
 fi
+
+# Check if we got all versions using jq
+published_versions=$(echo "$versions_json" | jq -r '.versions[]')
+expected_versions=("0.1.0" "0.2.0" "0.2.0a1")
+
+for version in "${expected_versions[@]}"; do
+    if ! echo "$published_versions" | grep -q "^$version\$"; then
+        echo "Missing version: $version"
+        echo "Found versions: $published_versions"
+        exit 1
+    fi
+done
 
 # Create a new project and install the package
 project_dir="$TEST_DIR/test-project"
 mkdir -p "$project_dir"
 
-# Initialize new project and install package
-uv init "$project_dir" --name test-project
-
-uv add example-package==0.2.0 \
-    --index http://hot:dog@localhost:8100/fast-pypi/simple/ \
-    --no-cache \
-    --project "$project_dir"
-
 # Verify the package was installed correctly
 (
     cd "$project_dir" || exit 1
-    installed_json=$(uv --project "$project_dir" pip list --format=json)
 
-    if ! echo "$installed_json" | grep -q '"name": "example-package", "version": "0.2.0"'; then
-        echo "Package not installed correctly"
+    # Initialize new project and install package
+    uv init . --name test-project
+
+    uv add example-package==0.2.0 \
+        --index http://hot:dog@localhost:8100/fast-pypi/simple/ \
+        --no-cache
+
+    # Use jq to check installed package version
+    installed_json=$(uv pip list --format=json)
+    
+    if ! command -v jq >/dev/null 2>&1; then
+        echo "jq is required but not installed. Please install it first."
+        exit 1
+    fi
+
+    installed_version=$(echo "$installed_json" | jq -r '.[] | select(.name=="example-package") | .version')
+    
+    if [ "$installed_version" != "0.2.0" ]; then
+        echo "Package not installed correctly. Found version: ${installed_version:-not found}"
         exit 1
     fi
 )
