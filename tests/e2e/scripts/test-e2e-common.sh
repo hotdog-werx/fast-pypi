@@ -1,5 +1,23 @@
 #!/bin/bash
 
+# Function to find GNU sed (gsed on Mac, sed on Linux)
+find_sed() {
+    if command -v gsed >/dev/null 2>&1; then
+        echo "gsed"
+    elif command -v sed >/dev/null 2>&1; then
+        # Check if it's GNU sed
+        if sed --version 2>/dev/null | grep -q GNU; then
+            echo "sed"
+        else
+            echo "Please install GNU sed (brew install gnu-sed on macOS)" >&2
+            return 1
+        fi
+    else
+        echo "No sed implementation found" >&2
+        return 1
+    fi
+}
+
 # Function to wait for server
 wait_for_server() {
     local url=$1

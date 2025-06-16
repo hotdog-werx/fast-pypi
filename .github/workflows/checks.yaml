@@ -55,6 +55,9 @@ jobs:
     - name: Install tools
       run: ./scripts/tools.sh
 
+    - name: Install dependencies
+      run: uv sync --group dev --all-extras
+
     - name: Run tests
       run: uv run poe tests
 
@@ -77,6 +80,9 @@ jobs:
 
     - name: Install tools
       run: ./scripts/tools.sh
+
+    - name: Install dependencies
+      run: uv sync --group dev --all-extras
 
     - name: Run tests
       run: ./tests/e2e/scripts/test-e2e-${{ matrix.client }}.sh

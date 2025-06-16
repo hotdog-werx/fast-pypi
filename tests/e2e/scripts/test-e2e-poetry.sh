@@ -37,10 +37,11 @@ for version in "${versions[@]}"; do
     pkg_dir="$TEST_DIR/$pkg_name-$pkg_version"
     cp -r "tests/e2e/publishable_templates/example_package_poetry" "$pkg_dir"
     
-    # Replace template variables
-    sed -i '' "s/{{package_name}}/$pkg_name/g" "$pkg_dir/pyproject.toml"
-    sed -i '' "s/{{package_version}}/$pkg_version/g" "$pkg_dir/pyproject.toml"
-    sed -i '' "s/{{package_version}}/$pkg_version/g" "$pkg_dir/src/version.py"
+    # Find GNU sed and replace template variables
+    SED=$(find_sed) || exit 1
+    "$SED" -i "s/{{package_name}}/$pkg_name/g" "$pkg_dir/pyproject.toml"
+    "$SED" -i "s/{{package_version}}/$pkg_version/g" "$pkg_dir/pyproject.toml"
+    "$SED" -i "s/{{package_version}}/$pkg_version/g" "$pkg_dir/src/version.py"
 
     # Build the package
     poetry build --project "$pkg_dir"
