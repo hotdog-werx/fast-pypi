@@ -7,4 +7,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- (fix) Ensure files with no projects return `404` for simple index
 - (feat) Initial implementation

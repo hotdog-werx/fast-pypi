@@ -73,6 +73,30 @@ def test_get_project_simple_index(
     )
 
 
+def test_get_project_simple_index_not_found(
+    fast_pypi_testclient: TestClient,
+    mocker: MockerFixture,
+    check_rbac_mock: AsyncMock,
+) -> None:
+    """Test getting a project simple index that does not exist."""
+    # Mock the backend to return an empty list for project files
+    mock_backend = mocker.patch('fast_pypi.pypi.router.get_backend_from_env')
+    mock_backend.return_value.list_files_for_project = mocker.AsyncMock(return_value=[])
+
+    response = fast_pypi_testclient.get('/fast-pypi/simple/nonexistent-project/')
+
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+    assert response.json()['detail'] == 'Project nonexistent-project not found.'
+
+    check_rbac_mock.assert_awaited_once_with(
+        rbac_input=ProjectRBACDecisionInput(
+            operation_type='read',
+            project_name='nonexistent-project',
+            request=mocker.ANY,
+        ),
+    )
+
+
 def test_get_project_artifact(
     fast_pypi_testclient: TestClient,
     mocker: MockerFixture,

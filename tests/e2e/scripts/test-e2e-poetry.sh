@@ -93,7 +93,8 @@ mkdir -p "$project_dir"
         --no-interaction
 
     # Configure source and install package
-    poetry source add fastpypi http://localhost:8100/fast-pypi/simple/
+    poetry source add --priority primary fastpypi http://localhost:8100/fast-pypi/simple/
+    poetry source add --priority supplemental PyPI
 
     export POETRY_REPOSITORIES_FASTPYPI_URL="http://localhost:8100/fast-pypi/upload/"
     export POETRY_HTTP_BASIC_FASTPYPI_USERNAME=hot
@@ -107,6 +108,9 @@ mkdir -p "$project_dir"
         echo "Package not installed correctly"
         exit 1
     fi
+
+    # Test installing a third party project
+    poetry add pydantic
 )
 
 echo "All tests passed successfully!"
