@@ -60,6 +60,11 @@ async def get_project_simple_index(request: Request, project_name: str) -> HTMLR
     project_files = await backend.list_files_for_project(
         project_name,
     )
+    if not project_files:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f'Project {project_name} not found.',
+        )
     return templates.TemplateResponse(
         request=request,
         name='simple_index_project.html',

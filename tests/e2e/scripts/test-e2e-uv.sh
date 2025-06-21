@@ -102,6 +102,11 @@ mkdir -p "$project_dir"
         echo "Package not installed correctly. Found version: ${installed_version:-not found}"
         exit 1
     fi
+
+    # Test installing a third party project
+    uv add pydantic \
+        --index http://hot:dog@localhost:8100/fast-pypi/simple/ \
+        --no-cache
 )
 
 echo "All tests passed successfully!"
