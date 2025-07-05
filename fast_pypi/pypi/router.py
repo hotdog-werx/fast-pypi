@@ -120,8 +120,8 @@ class UploadFormData(BaseModel):
     filetype: Literal['sdist', 'bdist_wheel']
     pyversion: str | None = None
     author_email: str | None = None
-    description: str
-    description_content_type: str
+    description: str | None = None
+    description_content_type: str | None = None
     license_expression: str | None = None
     requires_python: str | None = None
     content: Annotated[UploadFile, File()]
