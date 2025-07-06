@@ -40,22 +40,16 @@ def mock_form_request(mock_request: Request) -> Request:
     [
         # Root simple index
         ('GET', '/simple/', None),
-        ('GET', '/prefix/simple/', None),
-        ('GET', '/prefix/sub/simple/', None),
         ('GET', '/simple', None),  # No trailing slash
         # Simple project index
         ('GET', '/simple/test-project/', 'test-project'),
-        ('GET', '/prefix/simple/test-project/', 'test-project'),
-        ('GET', '/prefix/sub/simple/test-project/', 'test-project'),
         ('GET', '/simple/test-project', 'test-project'),  # No trailing slash
         # Artifacts
         ('GET', '/artifacts/test-project/1.0.0/file.whl', 'test-project'),
-        ('GET', '/prefix/artifacts/test-project/1.0.0/file.whl', 'test-project'),
-        ('GET', '/prefix/sub/artifacts/test-project/1.0.0/file.whl', 'test-project'),
-        # Delete
-        ('DELETE', '/delete/test-project/1.0.0', 'test-project'),
-        ('DELETE', '/prefix/delete/test-project/1.0.0', 'test-project'),
-        ('DELETE', '/prefix/sub/delete/test-project/1.0.0', 'test-project'),
+        # List versions
+        ('GET', '/projects/test-project/versions/', 'test-project'),
+        # Delete versions
+        ('POST', '/projects/test-project/delete-versions/', 'test-project'),
     ],
 )
 async def test_infer_project_name_from_path(

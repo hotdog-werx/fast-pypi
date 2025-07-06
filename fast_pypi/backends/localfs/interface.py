@@ -38,6 +38,34 @@ class LocalFSBackend(AbstractBackendInterface):
         return sorted(projects)
 
     @override
+    async def list_project_versions(self, project_name: str) -> Sequence[str]:
+        """Get the available versions of a project in the local file system.
+
+        Args:
+            project_name: The name of the project.
+
+        Returns:
+            A sequence of version strings for the specified project.
+        """
+        project_path = self.config.root_path / pypi_normalize(project_name)
+        if not await aiofiles_os.path.exists(project_path):
+            logger.warning(
+                'list_project_versions_not_found',
+                extra={
+                    'project_name': project_name,
+                    'project_path': str(project_path),
+                },
+            )
+            return []
+
+        version_names = [
+            d
+            for d in await aiofiles_os.listdir(project_path)
+            if await aiofiles_os.path.isdir(project_path / d) and not d.startswith('.')
+        ]
+        return sorted(version_names)
+
+    @override
     async def list_files_for_project(
         self,
         project_name: str,

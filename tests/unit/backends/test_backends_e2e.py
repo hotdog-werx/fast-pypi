@@ -72,6 +72,12 @@ class TestBackendE2E:
             'testproj',
         ]
 
+        versions = await backend.list_project_versions('testproj')
+        assert versions == [
+            '0.1.0',
+            '0.2.0a1',
+        ]
+
         # List files for project
         files = await backend.list_files_for_project('testproj')
         assert files == [
@@ -109,6 +115,27 @@ class TestBackendE2E:
 
         # Attempt to list files for a nonexistent project
         assert not await backend.list_files_for_project('nonexistentproj')
+
+    @pytest.mark.asyncio
+    async def test_backend_get_versions_nonexistent_project(
+        self,
+        backend_fixture: str,
+        request: pytest.FixtureRequest,
+    ) -> None:
+        """Test getting versions for a project that does not exist in the backend.
+
+        Args:
+            backend_fixture: Name of the backend fixture to use
+            request: The pytest request object
+        """
+        # Get the backend fixture
+        backend = cast(
+            'AbstractBackendInterface',
+            request.getfixturevalue(backend_fixture),
+        )
+
+        # Attempt to get versions for a nonexistent project
+        assert not await backend.list_project_versions('nonexistentproj')
 
     @pytest.mark.asyncio
     async def test_backend_get_nonexistent_file(

@@ -11,7 +11,8 @@ __UPLOAD_PATTERN = re.compile(r'.*/upload/?$')
 __SIMPLE_ROOT_PATTERN = re.compile(r'.*/simple/?$')
 __SIMPLE_PROJECT_PATTERN = re.compile(r'.*/simple/([^/]+)/?$')
 __ARTIFACTS_PATTERN = re.compile(r'.*/artifacts/([^/]+)/.+')
-__DELETE_PATTERN = re.compile(r'.*/delete/([^/]+)/.+')
+__LIST_PROJECTS_PATTERN = re.compile(r'.*/projects/?$')
+__PACKAGE_INFO_PATTERN = re.compile(r'.*/projects/([^/]+)/.*')
 
 
 def pypi_normalize(name: str) -> str:
@@ -81,7 +82,9 @@ async def infer_project_name_from_request(request: Request) -> str | None:
         str | None: The inferred project name, or None if accessing root index or unable to infer.
     """
     # Root simple index always returns None
-    if request.method == 'GET' and __SIMPLE_ROOT_PATTERN.match(request.url.path):
+    if request.method == 'GET' and (
+        __SIMPLE_ROOT_PATTERN.match(request.url.path) or __LIST_PROJECTS_PATTERN.match(request.url.path)
+    ):
         return None
 
     # Upload endpoint gets project name from form data
@@ -92,7 +95,8 @@ async def infer_project_name_from_request(request: Request) -> str | None:
     for method, pattern in [
         ('GET', __SIMPLE_PROJECT_PATTERN),
         ('GET', __ARTIFACTS_PATTERN),
-        ('DELETE', __DELETE_PATTERN),
+        ('GET', __PACKAGE_INFO_PATTERN),
+        ('POST', __PACKAGE_INFO_PATTERN),
     ]:
         if (
             request.method == method
