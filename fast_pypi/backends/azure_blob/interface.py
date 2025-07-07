@@ -41,6 +41,34 @@ class AzureBlobBackend(AbstractBackendInterface):
             )
 
     @override
+    async def list_project_versions(self, project_name: str) -> Sequence[str]:
+        """Get the available versions of a project in the azure blob backend.
+
+        Args:
+            project_name: The name of the project.
+
+        Returns:
+            A sequence of version strings for the specified project.
+        """
+        async with azure_blob_container_client(config=self.config) as (container_client, base_path):
+            name_prefix = f'{base_path}{project_name}/'
+            blob_props = [
+                blob_prop
+                async for blob_prop in container_client.walk_blobs(
+                    name_starts_with=name_prefix,
+                    delimiter='/',
+                )
+            ]
+
+            return sorted(
+                [
+                    blob_prop.name.removeprefix(name_prefix).removesuffix('/')
+                    for blob_prop in blob_props
+                    if '/' in blob_prop.name
+                ]
+            )
+
+    @override
     async def list_files_for_project(
         self,
         project_name: str,

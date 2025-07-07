@@ -1,9 +1,11 @@
 import mimetypes
+from collections.abc import Sequence
 from pathlib import Path
 from typing import Annotated, Literal
 
 from fastapi import (
     APIRouter,
+    Body,
     File,
     Form,
     HTTPException,
@@ -32,6 +34,7 @@ pep503_router = APIRouter()
     '/simple/',
     response_class=HTMLResponse,
     dependencies=[package_rbac_dependency('read')],
+    include_in_schema=False,
 )
 async def get_simple_index(request: Request) -> HTMLResponse:
     """A simple endpoint to test the router.
@@ -53,6 +56,7 @@ async def get_simple_index(request: Request) -> HTMLResponse:
     '/simple/{project_name}/',
     response_class=HTMLResponse,
     dependencies=[package_rbac_dependency('read')],
+    include_in_schema=False,
 )
 async def get_project_simple_index(request: Request, project_name: str) -> HTMLResponse:
     """A simple endpoint to test the router."""
@@ -174,32 +178,58 @@ async def upload_project_file(
         ) from e
 
 
-@pep503_router.delete(
-    '/delete/{project_name}/{version}',
-    status_code=status.HTTP_204_NO_CONTENT,
-    dependencies=[package_rbac_dependency('delete')],
+@pep503_router.get(
+    '/projects/',
+    dependencies=[package_rbac_dependency('read')],
 )
-async def delete_project_version(
-    _: Request,
-    project_name: str,
-    version: str,
-) -> None:
-    """Delete a specific version of a project."""
+async def list_projects() -> Sequence[str]:
+    """List all projects."""
     backend = get_backend_from_env()
-    result = await backend.delete_project_version(
-        project_name=project_name,
-        version=version,
-    )
-    if not result:
+    return await backend.list_projects()
+
+
+@pep503_router.get(
+    '/projects/{project_name}/versions/',
+    dependencies=[package_rbac_dependency('read')],
+)
+async def list_project_versions(project_name: str) -> Sequence[str]:
+    """List all versions for a specific project."""
+    backend = get_backend_from_env()
+    project_versions = await backend.list_project_versions(project_name)
+    if not project_versions:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f'Project {project_name} version {version} not found.',
+            detail=f'Project {project_name} not found.',
         )
+    return project_versions
+
+
+@pep503_router.post(
+    '/projects/{project_name}/delete-versions/',
+    status_code=status.HTTP_200_OK,
+    dependencies=[package_rbac_dependency('delete')],
+)
+async def delete_project_versions(
+    _: Request,
+    project_name: str,
+    versions: Annotated[list[str], Body()],
+) -> Sequence[str]:
+    """Delete a specific version of a project."""
+    backend = get_backend_from_env()
+    deleted_versions: list[str] = []
+    for version in versions:
+        deleted = await backend.delete_project_version(
+            project_name=project_name,
+            version=version,
+        )
+        if deleted:
+            deleted_versions.append(version)
 
     logger.info(
-        'project_version_deleted',
+        'project_versions_deleted',
         extra={
             'project_name': project_name,
-            'version': version,
+            'versions': deleted_versions,
         },
     )
+    return deleted_versions

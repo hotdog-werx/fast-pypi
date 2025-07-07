@@ -34,6 +34,17 @@ class AbstractBackendInterface(ABC):
         """
 
     @abstractmethod
+    async def list_project_versions(self, project_name: str) -> Sequence[str]:
+        """Get the available versions of a project.
+
+        Args:
+            project_name: The name of the project.
+
+        Returns:
+            A sequence of version strings for the specified project.
+        """
+
+    @abstractmethod
     async def list_files_for_project(self, project_name: str) -> Sequence[tuple[str, str]]:
         """List all files for a given project.
 
