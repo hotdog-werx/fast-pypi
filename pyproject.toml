@@ -4,7 +4,7 @@ description = ''
 authors = [{ name = 'hotdog-werx', email = 'james.trousdale@protonmail.com' }]
 license = 'MIT'
 readme = 'README.md'
-requires-python = '>=3.10'
+requires-python = '>=3.11'
 dynamic = ['version']
 
 dependencies = [
