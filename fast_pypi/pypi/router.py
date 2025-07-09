@@ -74,7 +74,7 @@ async def get_project_simple_index(request: Request, project_name: str) -> HTMLR
         name='simple_index_project.html',
         context={
             'project_name': project_name,
-            'project_files': project_files,
+            'project_files': [(f.version, f.filename) for f in project_files],
         },
     )
 

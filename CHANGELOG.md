@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- (feat) Backends return extended file info for project file list
 - (feat) Project info endpoints
 - (fix) Allow missing description/description content type
 - (fix) Ensure files with no projects return `404` for simple index

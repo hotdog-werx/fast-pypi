@@ -1,12 +1,19 @@
 import hashlib
 from collections.abc import Sequence
+from datetime import UTC, datetime
+from pathlib import Path
 
 import aiofiles
 import aioshutil
 from aiofiles import os as aiofiles_os
 from typing_extensions import override
 
-from fast_pypi.backends import AbstractBackendInterface, FileContents, ProjectFileExistsError
+from fast_pypi.backends import (
+    AbstractBackendInterface,
+    FileContents,
+    ProjectFileExistsError,
+    ProjectFileInfo,
+)
 from fast_pypi.config import FastPypiConfig
 from fast_pypi.logger import logger
 from fast_pypi.pypi import pypi_normalize
@@ -66,51 +73,45 @@ class LocalFSBackend(AbstractBackendInterface):
         return sorted(version_names)
 
     @override
-    async def list_files_for_project(
-        self,
-        project_name: str,
-    ) -> Sequence[tuple[str, str]]:
-        """List all files for a given project in the local file system.
+    async def list_files_for_project(self, project_name: str) -> Sequence[ProjectFileInfo]:
+        """List all files for a given project with their metadata."""
+        project_path = self.config.root_path / project_name
 
-        Args:
-            project_name: The name of the project.
-
-        Returns:
-            A sequence of tuples of (version, filename) for the specified project.
-        """
-        project_path = self.config.root_path / pypi_normalize(project_name)
-        files: list[tuple[str, str]] = []
-
+        # Check if project directory exists
         if not await aiofiles_os.path.exists(project_path):
-            logger.warning(
-                'list_files_for_project_not_found',
-                extra={
-                    'project_name': project_name,
-                    'project_path': str(project_path),
-                },
-            )
             return []
 
-        version_names = [
-            d
-            for d in await aiofiles_os.listdir(project_path)
-            if await aiofiles_os.path.isdir(project_path / d) and not d.startswith('.')
-        ]
+        file_infos: list[ProjectFileInfo] = []
 
-        for version in version_names:
-            version_path = project_path / version
-            file_names = [
-                f
-                for f in await aiofiles_os.listdir(version_path)
-                if (
-                    await aiofiles_os.path.isfile(version_path / f)
-                    and not f.startswith('.')
-                    and not f.endswith('.sha256')
-                )
-            ]
-            files.extend((version, file_name) for file_name in file_names)
+        # Walk through version directories
+        for version_entry in await aiofiles_os.scandir(project_path):
+            if not await aiofiles_os.path.isdir(version_entry.path):
+                continue
 
-        return sorted(files)
+            version = version_entry.name
+            version_path = Path(version_entry.path)
+
+            # Process files in version directory
+            for file_entry in await aiofiles_os.scandir(version_path):
+                if await aiofiles_os.path.isfile(file_entry.path) and not file_entry.name.endswith('.sha256'):
+                    filename = file_entry.name
+                    file_path = Path(file_entry.path)
+
+                    # Get file stats asynchronously
+                    stat_result = await aiofiles_os.stat(file_path)
+                    file_size = stat_result.st_size
+                    last_modified = datetime.fromtimestamp(stat_result.st_mtime, tz=UTC)
+
+                    file_info = ProjectFileInfo(
+                        project_name=project_name,
+                        version=version,
+                        filename=filename,
+                        size=file_size,
+                        last_modified=last_modified,
+                    )
+                    file_infos.append(file_info)
+
+        return sorted(file_infos, key=lambda fi: (fi.project_name, fi.version, fi.filename))
 
     @override
     async def get_file_contents(
