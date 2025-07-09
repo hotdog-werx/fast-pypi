@@ -4,7 +4,7 @@ description = ''
 authors = [{ name = 'hotdog-werx', email = 'james.trousdale@protonmail.com' }]
 license = 'MIT'
 readme = 'README.md'
-requires-python = '>=3.10'
+requires-python = '>=3.11'
 dynamic = ['version']
 
 dependencies = [
@@ -36,6 +36,7 @@ dev = [
   'types-aiofiles >=24.1.0.20250516, <25',
   'testcontainers[azurite] >=4.10.0, <5',
   'httpx >=0, <1',
+  'time-machine >=2.16.0, <3',
 ]
 
 [build-system]
@@ -153,4 +154,4 @@ sequence = [
 ]
 
 [tool.poe.tasks.local-dev]
-sequence = [ {cmd = "uv run python -m tests.local_dev"} ]
+sequence = [{ cmd = "uv run python -m tests.local_dev" }]

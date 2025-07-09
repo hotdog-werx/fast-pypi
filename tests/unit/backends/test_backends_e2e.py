@@ -80,10 +80,13 @@ class TestBackendE2E:
 
         # List files for project
         files = await backend.list_files_for_project('testproj')
-        assert files == [
-            ('0.1.0', 'testproj-0.1.0-py3-none-any.whl'),
-            ('0.2.0a1', 'testproj-0.2.0a1-py3-none-any.whl'),
+        assert [file.project_name for file in files] == ['testproj', 'testproj']
+        assert [file.version for file in files] == ['0.1.0', '0.2.0a1']
+        assert [file.filename for file in files] == [
+            'testproj-0.1.0-py3-none-any.whl',
+            'testproj-0.2.0a1-py3-none-any.whl',
         ]
+        assert [file.size for file in files] == [18, 26]
 
         # Get file contents and sha256
         fc = await backend.get_file_contents(

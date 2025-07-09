@@ -3,7 +3,12 @@ from collections.abc import Sequence
 
 from typing_extensions import override
 
-from fast_pypi.backends import AbstractBackendInterface, FileContents, ProjectFileExistsError
+from fast_pypi.backends import (
+    AbstractBackendInterface,
+    FileContents,
+    ProjectFileExistsError,
+    ProjectFileInfo,
+)
 from fast_pypi.config import FastPypiConfig
 from fast_pypi.logger import logger
 
@@ -72,30 +77,38 @@ class AzureBlobBackend(AbstractBackendInterface):
     async def list_files_for_project(
         self,
         project_name: str,
-    ) -> Sequence[tuple[str, str]]:
+    ) -> Sequence[ProjectFileInfo]:
         """List all files for a given project in the azure blob backend.
 
         Args:
             project_name: The name of the project.
 
         Returns:
-            A sequence of tuples of (version, filename) for the specified
-                project.
+            A sequence of ProjectFileInfo objects for the specified project.
         """
         async with azure_blob_container_client(config=self.config) as (container_client, base_path):
             name_prefix = f'{base_path}{project_name}/'
-            blob_names = sorted(
+            blob_props = sorted(
                 [
                     blob_name
-                    async for blob_name in container_client.list_blob_names(
+                    async for blob_name in container_client.list_blobs(
                         name_starts_with=name_prefix,
                     )
-                ]
+                ],
+                key=lambda x: x.name,
             )
 
-            blob_name_splits = [blob_name.removeprefix(name_prefix).split('/', maxsplit=1) for blob_name in blob_names]
-
-            return [(version_filename[0], version_filename[1]) for version_filename in blob_name_splits]
+            return [
+                ProjectFileInfo(
+                    project_name=project_name,
+                    version=blob_prop.name.removeprefix(name_prefix).split('/', maxsplit=1)[0],
+                    filename=blob_prop.name.removeprefix(name_prefix).split('/', maxsplit=1)[1],
+                    last_modified=blob_prop.last_modified,
+                    size=blob_prop.size,
+                )
+                for blob_prop in blob_props
+                if not blob_prop.name.endswith('.sha256') and blob_prop.name.endswith(('.whl', '.tar.gz'))
+            ]
 
     @override
     async def get_file_contents(

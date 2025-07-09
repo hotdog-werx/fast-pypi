@@ -1,8 +1,21 @@
 from abc import ABC, abstractmethod
 from collections.abc import Sequence
 from dataclasses import dataclass
+from datetime import datetime
+
+from pydantic import BaseModel
 
 from fast_pypi.config import FastPypiConfig
+
+
+class ProjectFileInfo(BaseModel):
+    """Model for project file information."""
+
+    project_name: str
+    version: str
+    filename: str
+    last_modified: datetime
+    size: int
 
 
 class AbstractBackendInterface(ABC):
@@ -45,15 +58,14 @@ class AbstractBackendInterface(ABC):
         """
 
     @abstractmethod
-    async def list_files_for_project(self, project_name: str) -> Sequence[tuple[str, str]]:
+    async def list_files_for_project(self, project_name: str) -> Sequence[ProjectFileInfo]:
         """List all files for a given project.
 
         Args:
             project_name: The name of the project.
 
         Returns:
-            A sequence of tuples of (version, filename) for the specified
-                project.
+            A sequence of ProjectFileInfo objects for the specified project.
         """
 
     @abstractmethod

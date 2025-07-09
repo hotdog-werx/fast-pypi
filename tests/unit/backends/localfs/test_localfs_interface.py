@@ -45,3 +45,21 @@ async def test_localfs_get_file_contents_missing_sha256(
     async with aiofiles.open(str(sha256_path), 'rb') as f:
         stored_sha256 = (await f.read()).decode('utf-8').strip()
         assert stored_sha256 == expected_sha256
+
+
+@pytest.mark.asyncio
+async def test_list_files_for_project_os_error(localfs_backend: LocalFSBackend):
+    """Test list_files_for_project handles OS errors gracefully."""
+    # Create a project directory
+    project_path = localfs_backend.config.root_path / 'test-project'
+    project_path.mkdir(parents=True, exist_ok=True)
+
+    # Create a file in the project dir that isn't a directory - it should be
+    # ignored by the scandir logic
+    test_file = project_path / 'test-file.whl'
+    _ = test_file.write_text('dummy content')
+
+    result = await localfs_backend.list_files_for_project('test-project')
+
+    # Should return empty list when OS error occurs
+    assert result == []

@@ -1,3 +1,4 @@
+from datetime import UTC, datetime
 from unittest.mock import AsyncMock
 
 from fastapi import status
@@ -5,6 +6,7 @@ from fastapi.testclient import TestClient
 from pytest_mock import MockerFixture
 
 from fast_pypi.backends import FileContents
+from fast_pypi.backends.interface import ProjectFileInfo
 from fast_pypi.pypi.package_rbac import ProjectRBACDecisionInput
 
 
@@ -52,7 +54,16 @@ def test_get_project_simple_index(
     # Mock the backend to return a list of files for the project
     mock_backend = mocker.patch('fast_pypi.pypi.router.get_backend_from_env')
     mock_backend.return_value.list_files_for_project = mocker.AsyncMock(
-        return_value=version_files,
+        return_value=[
+            ProjectFileInfo(
+                project_name='testproj1',
+                version=version,
+                filename=filename,
+                size=1234,
+                last_modified=datetime(2023, 1, 1, tzinfo=UTC),
+            )
+            for version, filename in version_files
+        ]
     )
 
     response = fast_pypi_testclient.get('/fast-pypi/simple/testproj1/')
