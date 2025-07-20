@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- (feat) Implement fallback
+  - Allow fallback to a secondary server when a package is not found in the 
+    fast-pypi server
 - (feat) Backends return extended file info for project file list
 - (feat) Project info endpoints
 - (fix) Allow missing description/description content type

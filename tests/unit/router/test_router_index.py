@@ -1,13 +1,15 @@
 from datetime import UTC, datetime
 from unittest.mock import AsyncMock
 
-from fastapi import status
+import pytest
+from fastapi import HTTPException, status
 from fastapi.testclient import TestClient
 from pytest_mock import MockerFixture
 
 from fast_pypi.backends import FileContents
 from fast_pypi.backends.interface import ProjectFileInfo
 from fast_pypi.pypi.package_rbac import ProjectRBACDecisionInput
+from fast_pypi.pypi.router import handle_project_not_found
 
 
 def test_get_simple_index(
@@ -94,10 +96,17 @@ def test_get_project_simple_index_not_found(
     mock_backend = mocker.patch('fast_pypi.pypi.router.get_backend_from_env')
     mock_backend.return_value.list_files_for_project = mocker.AsyncMock(return_value=[])
 
+    mock_handle_project_not_found = mocker.patch(
+        'fast_pypi.pypi.router.handle_project_not_found',
+        side_effect=HTTPException(status_code=status.HTTP_418_IM_A_TEAPOT, detail='Hello hotdog'),
+    )
+
     response = fast_pypi_testclient.get('/fast-pypi/simple/nonexistent-project/')
 
-    assert response.status_code == status.HTTP_404_NOT_FOUND
-    assert response.json()['detail'] == 'Project nonexistent-project not found.'
+    assert response.status_code == status.HTTP_418_IM_A_TEAPOT
+    assert response.json()['detail'] == 'Hello hotdog'
+
+    mock_handle_project_not_found.assert_called_once_with('nonexistent-project')
 
     check_rbac_mock.assert_awaited_once_with(
         rbac_input=ProjectRBACDecisionInput(
@@ -174,3 +183,36 @@ def test_get_project_artifact_not_found(
             request=mocker.ANY,
         ),
     )
+
+
+@pytest.mark.asyncio
+async def test_handle_project_not_found_function_with_fallback_enabled(
+    mocker: MockerFixture,
+) -> None:
+    """Test the handle_project_not_found function directly with fallback enabled."""
+    # Mock the config to enable fallback
+    mock_config = mocker.patch('fast_pypi.pypi.router.FastPypiConfig.from_env')
+    mock_config.return_value.fallback_enabled = True
+    mock_config.return_value.fallback_url = 'https://test-fallback.com/simple/'
+
+    response = await handle_project_not_found('test-project')
+
+    assert response.status_code == status.HTTP_307_TEMPORARY_REDIRECT
+    assert response.headers['location'] == 'https://test-fallback.com/simple/test-project/'
+
+
+@pytest.mark.asyncio
+async def test_handle_project_not_found_function_with_fallback_disabled(
+    mocker: MockerFixture,
+) -> None:
+    """Test the handle_project_not_found function directly with fallback disabled."""
+    # Mock the config to disable fallback
+    mock_config = mocker.patch('fast_pypi.pypi.router.FastPypiConfig.from_env')
+    mock_config.return_value.fallback_enabled = False
+    mock_config.return_value.fallback_url = 'https://test-fallback.com/simple/'
+
+    with pytest.raises(HTTPException) as exc_info:
+        _ = await handle_project_not_found('test-project')
+
+    assert exc_info.value.status_code == status.HTTP_404_NOT_FOUND
+    assert exc_info.value.detail == 'Project test-project not found.'

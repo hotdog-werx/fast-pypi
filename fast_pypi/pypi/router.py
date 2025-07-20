@@ -16,9 +16,10 @@ from fastapi import (
 )
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel, Field
-from starlette.responses import HTMLResponse
+from starlette.responses import HTMLResponse, RedirectResponse
 
 from fast_pypi.backends import ProjectFileExistsError
+from fast_pypi.config import FastPypiConfig
 from fast_pypi.get_backend import get_backend_from_env
 from fast_pypi.logger import logger
 
@@ -52,23 +53,36 @@ async def get_simple_index(request: Request) -> HTMLResponse:
     )
 
 
+async def handle_project_not_found(
+    project_name: str,
+) -> RedirectResponse:
+    """Handle the case where a project is not found."""
+    cfg = FastPypiConfig.from_env()
+    if cfg.fallback_enabled:
+        fallback_url = cfg.fallback_url.rstrip('/')
+        return RedirectResponse(
+            url=f'{fallback_url}/{project_name}/',
+        )
+    raise HTTPException(
+        status_code=status.HTTP_404_NOT_FOUND,
+        detail=f'Project {project_name} not found.',
+    )
+
+
 @pep503_router.get(
     '/simple/{project_name}/',
-    response_class=HTMLResponse,
+    response_model=None,
     dependencies=[package_rbac_dependency('read')],
     include_in_schema=False,
 )
-async def get_project_simple_index(request: Request, project_name: str) -> HTMLResponse:
+async def get_project_simple_index(request: Request, project_name: str) -> HTMLResponse | RedirectResponse:
     """A simple endpoint to test the router."""
     backend = get_backend_from_env()
     project_files = await backend.list_files_for_project(
         project_name,
     )
     if not project_files:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f'Project {project_name} not found.',
-        )
+        return await handle_project_not_found(project_name)
     return templates.TemplateResponse(
         request=request,
         name='simple_index_project.html',
